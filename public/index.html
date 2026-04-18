@@ -1,0 +1,204 @@
+<!-- This file provides the frontend page structure for the food calorie dashboard. -->
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Food Calorie Dashboard</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="page-shell">
+      <header class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Food Calorie Management System</p>
+          <h1>Use the backend visually, not just through Postman.</h1>
+          <p class="hero-text">
+            This dashboard talks directly to your Express + MongoDB CRUD API. Create foods, inspect
+            returned records, update calories, and delete entries from one place.
+          </p>
+          <div class="hero-actions">
+            <a href="#create-panel" class="button button-primary">Create Food</a>
+            <button type="button" id="refreshButton" class="button button-secondary">Refresh Data</button>
+          </div>
+        </div>
+
+        <aside class="hero-panel">
+          <p class="panel-label">Data Flow</p>
+          <ol class="flow-list">
+            <li>Request from browser</li>
+            <li>Route decides endpoint</li>
+            <li>Controller validates payload</li>
+            <li>Model enforces schema</li>
+            <li>MongoDB stores document</li>
+            <li>Response renders in UI</li>
+          </ol>
+        </aside>
+      </header>
+
+      <main class="dashboard">
+        <section class="card card-form" id="create-panel">
+          <div class="section-heading">
+            <p class="section-kicker">Create</p>
+            <h2>Add a new food item</h2>
+            <p>POST <code>/food</code></p>
+          </div>
+
+          <form id="foodForm" class="food-form">
+            <label>
+              Food name
+              <input id="nameInput" name="name" type="text" placeholder="Chicken Breast" required />
+            </label>
+
+            <label>
+              Calories
+              <input id="caloriesInput" name="calories" type="number" min="0" step="1" placeholder="165" />
+            </label>
+
+            <button type="submit" class="button button-primary button-block">Save Food</button>
+          </form>
+
+          <div class="request-preview">
+            <p class="panel-label">Postman Equivalent</p>
+            <pre><code>POST http://localhost:3000/food
+Content-Type: application/json
+
+{
+  "name": "Chicken Breast",
+  "calories": 165
+}</code></pre>
+          </div>
+        </section>
+
+        <section class="card card-status">
+          <div class="section-heading">
+            <p class="section-kicker">Feedback</p>
+            <h2>Live API response status</h2>
+            <p>Helpful for seeing success and validation errors without opening devtools.</p>
+          </div>
+
+          <div id="statusBox" class="status-box status-idle">
+            Ready. Load the foods list or create a new entry to begin.
+          </div>
+
+          <div class="stats-grid">
+            <article class="stat-tile">
+              <span>Total Foods</span>
+              <strong id="foodCount">0</strong>
+            </article>
+            <article class="stat-tile">
+              <span>Total Calories</span>
+              <strong id="calorieTotal">0</strong>
+            </article>
+            <article class="stat-tile">
+              <span>Average Calories</span>
+              <strong id="calorieAverage">0</strong>
+            </article>
+          </div>
+        </section>
+
+        <section class="card card-api">
+          <div class="section-heading">
+            <p class="section-kicker">Routes</p>
+            <h2>Backend interface map</h2>
+            <p>This frontend intentionally mirrors your current API design.</p>
+          </div>
+
+          <div class="route-list">
+            <div class="route-item">
+              <span class="method method-get">GET</span>
+              <code>/foods</code>
+              <p>Fetch all saved foods.</p>
+            </div>
+            <div class="route-item">
+              <span class="method method-get">GET</span>
+              <code>/foods?keyword=chicken</code>
+              <p>Search foods by name keyword.</p>
+            </div>
+            <div class="route-item">
+              <span class="method method-post">POST</span>
+              <code>/food</code>
+              <p>Create a new food document.</p>
+            </div>
+            <div class="route-item">
+              <span class="method method-patch">PATCH</span>
+              <code>/food/:id</code>
+              <p>Update only the calories field.</p>
+            </div>
+            <div class="route-item">
+              <span class="method method-delete">DELETE</span>
+              <code>/food/:id</code>
+              <p>Remove a food record by ID.</p>
+            </div>
+          </div>
+        </section>
+
+        <section class="card card-table">
+          <div class="section-heading">
+            <p class="section-kicker">Records</p>
+            <h2>Saved foods and search</h2>
+            <p>GET <code>/foods</code> or <code>/foods?keyword=...</code></p>
+          </div>
+
+          <form id="searchForm" class="search-form">
+            <input
+              id="searchInput"
+              name="keyword"
+              type="text"
+              placeholder="Search food by name, for example chicken"
+            />
+            <button type="submit" class="button button-secondary">Search</button>
+            <button type="button" id="clearSearchButton" class="button button-secondary">Clear</button>
+          </form>
+
+          <div class="table-shell">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Calories</th>
+                  <th>MongoDB ID</th>
+                  <th>Created</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody id="foodTableBody">
+                <tr>
+                  <td colspan="5" class="table-empty">Loading foods...</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <template id="foodRowTemplate">
+      <tr>
+        <td data-cell="name"></td>
+        <td data-cell="calories"></td>
+        <td data-cell="id" class="mono small-text"></td>
+        <td data-cell="createdAt"></td>
+        <td>
+          <div class="row-actions">
+            <form class="inline-update-form">
+              <input
+                class="inline-calorie-input"
+                name="calories"
+                type="number"
+                min="0"
+                step="1"
+                placeholder="New calories"
+                required
+              />
+              <button type="submit" class="button button-secondary button-small">Update</button>
+            </form>
+            <button type="button" class="button button-danger button-small delete-button">Delete</button>
+          </div>
+        </td>
+      </tr>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
