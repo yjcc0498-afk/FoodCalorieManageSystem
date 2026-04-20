@@ -1,6 +1,3 @@
-// This file handles CRUD business logic and response assembly for food data.
-//业务逻辑
-
 const mongoose = require('mongoose');
 const Food = require('../models/Food');
 
@@ -22,9 +19,9 @@ const createFood = async (req, res) => {
       });
     }
 
-    // Controller acts like request/response assembly: normalize incoming payload before persistence.
     const payload = {
-      name
+      name,
+      owner: req.user._id
     };
 
     if (calories !== undefined) {
@@ -48,10 +45,11 @@ const createFood = async (req, res) => {
 const getAllFoods = async (req, res) => {
   try {
     const { keyword } = req.query;
-    const filter = {};
+    const filter = {
+      owner: req.user._id
+    };
 
     if (keyword && keyword.trim()) {
-      // Route/controller keeps query assembly here so the model stays focused on field rules.
       filter.name = {
         $regex: keyword.trim().toLowerCase(),
         $options: 'i'
@@ -92,8 +90,11 @@ const updateFoodCalories = async (req, res) => {
       });
     }
 
-    const updatedFood = await Food.findByIdAndUpdate(
-      id,
+    const updatedFood = await Food.findOneAndUpdate(
+      {
+        _id: id,
+        owner: req.user._id
+      },
       { calories: Number(calories) },
       { new: true, runValidators: true }
     );
@@ -101,7 +102,7 @@ const updateFoodCalories = async (req, res) => {
     if (!updatedFood) {
       return res.status(404).json({
         message: 'Food not found.',
-        error: 'No food record exists for the provided ID.'
+        error: 'No owned food record exists for the provided ID.'
       });
     }
 
@@ -128,12 +129,15 @@ const deleteFood = async (req, res) => {
       });
     }
 
-    const deletedFood = await Food.findByIdAndDelete(id);
+    const deletedFood = await Food.findOneAndDelete({
+      _id: id,
+      owner: req.user._id
+    });
 
     if (!deletedFood) {
       return res.status(404).json({
         message: 'Food not found.',
-        error: 'No food record exists for the provided ID.'
+        error: 'No owned food record exists for the provided ID.'
       });
     }
 

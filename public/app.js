@@ -1,4 +1,20 @@
-// This file handles frontend interactions and talks to the backend CRUD API.
+const TOKEN_STORAGE_KEY = 'food-calorie-token';
+
+const authView = document.getElementById('authView');
+const appView = document.getElementById('appView');
+const showLoginButton = document.getElementById('showLoginButton');
+const showRegisterButton = document.getElementById('showRegisterButton');
+const loginForm = document.getElementById('loginForm');
+const registerForm = document.getElementById('registerForm');
+const authStatusBox = document.getElementById('authStatusBox');
+const logoutButton = document.getElementById('logoutButton');
+const currentUsername = document.getElementById('currentUsername');
+const currentUserEmail = document.getElementById('currentUserEmail');
+const currentUserRole = document.getElementById('currentUserRole');
+const adminPanel = document.getElementById('adminPanel');
+const refreshUsersButton = document.getElementById('refreshUsersButton');
+const userTableBody = document.getElementById('userTableBody');
+
 const foodForm = document.getElementById('foodForm');
 const refreshButton = document.getElementById('refreshButton');
 const searchForm = document.getElementById('searchForm');
@@ -15,9 +31,29 @@ const listState = {
   keyword: ''
 };
 
+let authToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+let currentUser = null;
+
+const setStatusBox = (element, message, type = 'idle') => {
+  element.textContent = message;
+  element.className = `status-box status-${type}`;
+};
+
 const setStatus = (message, type = 'idle') => {
-  statusBox.textContent = message;
-  statusBox.className = `status-box status-${type}`;
+  setStatusBox(statusBox, message, type);
+};
+
+const setAuthStatus = (message, type = 'idle') => {
+  setStatusBox(authStatusBox, message, type);
+};
+
+const setLoadingState = (button, loading, loadingText, idleText) => {
+  if (!button) {
+    return;
+  }
+
+  button.disabled = loading;
+  button.textContent = loading ? loadingText : idleText;
 };
 
 const formatDate = (value) => {
@@ -28,13 +64,50 @@ const formatDate = (value) => {
   return new Date(value).toLocaleString();
 };
 
-const setLoadingState = (button, loading, loadingText, idleText) => {
-  if (!button) {
+const showAuthView = () => {
+  authView.classList.remove('hidden');
+  appView.classList.add('hidden');
+};
+
+const showAppView = () => {
+  authView.classList.add('hidden');
+  appView.classList.remove('hidden');
+};
+
+const setAuthMode = (mode) => {
+  const isLoginMode = mode === 'login';
+
+  loginForm.classList.toggle('hidden', !isLoginMode);
+  registerForm.classList.toggle('hidden', isLoginMode);
+  showLoginButton.classList.toggle('active', isLoginMode);
+  showRegisterButton.classList.toggle('active', !isLoginMode);
+  setAuthStatus(isLoginMode ? 'Please login to continue.' : 'Create a new account to continue.', 'idle');
+};
+
+const saveSession = ({ token, safeUser }) => {
+  authToken = token;
+  currentUser = safeUser;
+  window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
+};
+
+const clearSession = () => {
+  authToken = null;
+  currentUser = null;
+  window.localStorage.removeItem(TOKEN_STORAGE_KEY);
+};
+
+const renderCurrentUser = () => {
+  if (!currentUser) {
+    currentUsername.textContent = 'Not signed in';
+    currentUserEmail.textContent = '';
+    currentUserRole.textContent = '';
     return;
   }
 
-  button.disabled = loading;
-  button.textContent = loading ? loadingText : idleText;
+  currentUsername.textContent = currentUser.username || 'Unknown user';
+  currentUserEmail.textContent = currentUser.email || '';
+  currentUserRole.textContent = `Role: ${currentUser.role || 'user'}`;
+  adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
 };
 
 const renderStats = (foods) => {
@@ -86,7 +159,7 @@ const renderFoods = (foods) => {
     });
 
     deleteButton.addEventListener('click', async () => {
-      const confirmed = window.confirm(`Delete "${food.name}" from the database?`);
+      const confirmed = window.confirm(`Delete "${food.name}" from your account?`);
 
       if (!confirmed) {
         return;
@@ -105,15 +178,56 @@ const renderFoods = (foods) => {
   });
 };
 
+const renderUsers = (users) => {
+  if (!users.length) {
+    userTableBody.innerHTML = '<tr><td colspan="5" class="table-empty">No users found.</td></tr>';
+    return;
+  }
+
+  userTableBody.innerHTML = '';
+
+  users.forEach((user) => {
+    const row = document.createElement('tr');
+    const usernameCell = document.createElement('td');
+    const emailCell = document.createElement('td');
+    const roleCell = document.createElement('td');
+    const idCell = document.createElement('td');
+    const createdCell = document.createElement('td');
+
+    usernameCell.textContent = user.username || '';
+    emailCell.textContent = user.email || '';
+    roleCell.textContent = user.role || 'user';
+    idCell.textContent = user._id || '';
+    idCell.className = 'mono small-text';
+    createdCell.textContent = formatDate(user.createdAt);
+
+    row.append(usernameCell, emailCell, roleCell, idCell, createdCell);
+    userTableBody.appendChild(row);
+  });
+};
+
 const request = async (url, options = {}) => {
+  const headers = {
+    'Content-Type': 'application/json',
+    ...(options.headers || {})
+  };
+
+  if (authToken) {
+    headers.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await fetch(url, {
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    ...options
+    ...options,
+    headers
   });
 
   const data = await response.json().catch(() => ({}));
+
+  if (response.status === 401 && authToken) {
+    clearSession();
+    showAuthView();
+    setAuthStatus('Your session expired. Please login again.', 'error');
+  }
 
   if (!response.ok) {
     const message = data.message || 'Request failed.';
@@ -132,7 +246,6 @@ const buildFoodsUrl = () => {
   }
 
   const queryString = params.toString();
-
   return queryString ? `/foods?${queryString}` : '/foods';
 };
 
@@ -146,11 +259,26 @@ const loadFoods = async () => {
     if (listState.keyword) {
       setStatus(`Found ${result.count || 0} food record(s) for keyword "${listState.keyword}".`, 'success');
     } else {
-      setStatus(`Loaded ${result.count || 0} food record(s) from the backend successfully.`, 'success');
+      setStatus(`Loaded ${result.count || 0} private food record(s).`, 'success');
     }
   } catch (error) {
     renderFoods([]);
     setStatus(error.message, 'error');
+  }
+};
+
+const loadUsersIfAdmin = async () => {
+  if (!currentUser || currentUser.role !== 'admin') {
+    return;
+  }
+
+  userTableBody.innerHTML = '<tr><td colspan="5" class="table-empty">Loading users...</td></tr>';
+
+  try {
+    const result = await request('/users');
+    renderUsers(result.data || []);
+  } catch (error) {
+    userTableBody.innerHTML = `<tr><td colspan="5" class="table-empty">${error.message}</td></tr>`;
   }
 };
 
@@ -160,7 +288,7 @@ const createFood = async (payload) => {
     body: JSON.stringify(payload)
   });
 
-  setStatus(`Created "${result.data.name}" successfully through POST /food.`, 'success');
+  setStatus(`Created "${result.data.name}" successfully.`, 'success');
   await loadFoods();
 };
 
@@ -170,7 +298,7 @@ const updateFood = async (id, calories) => {
     body: JSON.stringify({ calories: Number(calories) })
   });
 
-  setStatus(`Updated calories for "${result.data.name}" through PATCH /food/:id.`, 'success');
+  setStatus(`Updated calories for "${result.data.name}".`, 'success');
   await loadFoods();
 };
 
@@ -179,9 +307,121 @@ const deleteFood = async (id) => {
     method: 'DELETE'
   });
 
-  setStatus(`Deleted "${result.data.name}" through DELETE /food/:id.`, 'success');
+  setStatus(`Deleted "${result.data.name}".`, 'success');
   await loadFoods();
 };
+
+const enterDashboard = async (session) => {
+  saveSession(session);
+  renderCurrentUser();
+  showAppView();
+  await loadFoods();
+  await loadUsersIfAdmin();
+};
+
+const checkExistingSession = async () => {
+  if (!authToken) {
+    showAuthView();
+    return;
+  }
+
+  setAuthStatus('Checking saved login session...', 'idle');
+
+  try {
+    const result = await request('/auth/me');
+    currentUser = result.safeUser;
+    renderCurrentUser();
+    showAppView();
+    await loadFoods();
+    await loadUsersIfAdmin();
+  } catch (error) {
+    clearSession();
+    showAuthView();
+    setAuthStatus(error.message, 'error');
+  }
+};
+
+showLoginButton.addEventListener('click', () => {
+  setAuthMode('login');
+});
+
+showRegisterButton.addEventListener('click', () => {
+  setAuthMode('register');
+});
+
+loginForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submitButton = loginForm.querySelector('button[type="submit"]');
+  const formData = new FormData(loginForm);
+
+  setLoadingState(submitButton, true, 'Logging in...', 'Login');
+  setAuthStatus('Logging in with POST /auth/login ...', 'idle');
+
+  try {
+    const result = await request('/auth/login', {
+      method: 'POST',
+      body: JSON.stringify({
+        identifier: String(formData.get('identifier') || '').trim(),
+        password: String(formData.get('password') || '')
+      })
+    });
+
+    setAuthStatus('Login successful.', 'success');
+    await enterDashboard(result);
+    loginForm.reset();
+  } catch (error) {
+    setAuthStatus(error.message, 'error');
+  } finally {
+    setLoadingState(submitButton, false, 'Logging in...', 'Login');
+  }
+});
+
+registerForm.addEventListener('submit', async (event) => {
+  event.preventDefault();
+  const submitButton = registerForm.querySelector('button[type="submit"]');
+  const formData = new FormData(registerForm);
+
+  setLoadingState(submitButton, true, 'Registering...', 'Register and Enter');
+  setAuthStatus('Creating account with POST /auth/register ...', 'idle');
+
+  try {
+    const result = await request('/auth/register', {
+      method: 'POST',
+      body: JSON.stringify({
+        username: String(formData.get('username') || '').trim(),
+        email: String(formData.get('email') || '').trim(),
+        password: String(formData.get('password') || '')
+      })
+    });
+
+    setAuthStatus('Registration successful.', 'success');
+    await enterDashboard(result);
+    registerForm.reset();
+  } catch (error) {
+    setAuthStatus(error.message, 'error');
+  } finally {
+    setLoadingState(submitButton, false, 'Registering...', 'Register and Enter');
+  }
+});
+
+logoutButton.addEventListener('click', () => {
+  clearSession();
+  renderFoods([]);
+  renderCurrentUser();
+  adminPanel.classList.add('hidden');
+  showAuthView();
+  setAuthStatus('You have logged out.', 'idle');
+});
+
+refreshUsersButton.addEventListener('click', async () => {
+  setLoadingState(refreshUsersButton, true, 'Refreshing...', 'Refresh Users');
+
+  try {
+    await loadUsersIfAdmin();
+  } finally {
+    setLoadingState(refreshUsersButton, false, 'Refreshing...', 'Refresh Users');
+  }
+});
 
 foodForm.addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -190,7 +430,6 @@ foodForm.addEventListener('submit', async (event) => {
   const formData = new FormData(foodForm);
   const name = String(formData.get('name') || '').trim();
   const calories = formData.get('calories');
-
   const payload = { name };
 
   if (calories !== '') {
@@ -231,4 +470,4 @@ clearSearchButton.addEventListener('click', async () => {
   await loadFoods();
 });
 
-loadFoods();
+checkExistingSession();

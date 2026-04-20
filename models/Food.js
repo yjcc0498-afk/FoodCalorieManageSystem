@@ -1,6 +1,3 @@
-// This file defines the Food model and its schema validation rules.
-//数据模型
-
 const mongoose = require('mongoose');
 
 const foodSchema = new mongoose.Schema(
@@ -15,6 +12,12 @@ const foodSchema = new mongoose.Schema(
       type: Number,
       default: 0,
       min: [0, 'Calories cannot be negative.']
+    },
+    // Keep ownership in the model layer so request handlers can safely scope data per user.
+    owner: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      required: [true, 'Food owner is required.']
     }
   },
   {

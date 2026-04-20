@@ -1,6 +1,3 @@
-// This file maps food-related API routes to controller handlers.
-//路由配置
-
 const express = require('express');
 const {
   createFood,
@@ -8,8 +5,12 @@ const {
   updateFoodCalories,
   deleteFood
 } = require('../controllers/foodController');
+const authMiddleware = require('../middleware/authMiddleware');
 
 const router = express.Router();
+
+// Food data is user-scoped, so every food request must pass JWT auth before reaching the controller.
+router.use(authMiddleware);
 
 router.post('/food', createFood);
 router.get('/foods', getAllFoods);
