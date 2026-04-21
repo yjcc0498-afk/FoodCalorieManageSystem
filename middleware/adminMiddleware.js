@@ -1,3 +1,5 @@
+//身份认证（auth） + 权限校验（role）
+
 const { isAdminUser } = require('../utils/permissions');
 
 const adminMiddleware = (req, res, next) => {

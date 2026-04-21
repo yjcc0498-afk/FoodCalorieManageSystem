@@ -1,7 +1,7 @@
 {
   "name": "express-mongodb-project1",
   "version": "1.0.0",
-  "description": "MVP RESTful API for managing food calories with Node.js, Express, and MongoDB.",
+  "description": "Food calorie management system backend built with Node.js, Express, and MongoDB.",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
@@ -12,7 +12,8 @@
     "express",
     "mongodb",
     "mongoose",
-    "rest-api"
+    "jwt",
+    "food-calorie"
   ],
   "author": "",
   "license": "ISC",

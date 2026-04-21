@@ -39,11 +39,14 @@ const userSchema = new mongoose.Schema(
 // Hashing lives in the model so every saved user follows the same password rule.
 userSchema.pre('save', async function savePassword(next) {
   try {
+    // 如果密码没被修改，就不重新加密
     if (!this.isModified('password')) {
       return next();
     }
 
+    // 生成加密盐
     const salt = await bcrypt.genSalt(10);
+     // 把明文密码加密成哈希
     this.password = await bcrypt.hash(this.password, salt);
     return next();
   } catch (error) {
@@ -51,10 +54,12 @@ userSchema.pre('save', async function savePassword(next) {
   }
 });
 
+//密码校验，true/false
 userSchema.methods.comparePassword = async function comparePassword(candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
 
+//安全返回用户信息（隐藏密码）
 userSchema.methods.toSafeObject = function toSafeObject() {
   const userObject = this.toObject({ versionKey: false });
   delete userObject.password;

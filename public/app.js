@@ -319,26 +319,17 @@ const enterDashboard = async (session) => {
   await loadUsersIfAdmin();
 };
 
-const checkExistingSession = async () => {
-  if (!authToken) {
-    showAuthView();
-    return;
-  }
-
-  setAuthStatus('Checking saved login session...', 'idle');
-
-  try {
-    const result = await request('/auth/me');
-    currentUser = result.safeUser;
-    renderCurrentUser();
-    showAppView();
-    await loadFoods();
-    await loadUsersIfAdmin();
-  } catch (error) {
+const initializeAuthView = () => {
+  if (authToken) {
     clearSession();
-    showAuthView();
-    setAuthStatus(error.message, 'error');
+    setAuthStatus('Please login again to continue.', 'idle');
+  } else {
+    setAuthStatus('Please login or register to continue.', 'idle');
   }
+
+  renderCurrentUser();
+  adminPanel.classList.add('hidden');
+  showAuthView();
 };
 
 showLoginButton.addEventListener('click', () => {
@@ -470,4 +461,4 @@ clearSearchButton.addEventListener('click', async () => {
   await loadFoods();
 });
 
-checkExistingSession();
+initializeAuthView();

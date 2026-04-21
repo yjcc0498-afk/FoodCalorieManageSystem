@@ -46,9 +46,6 @@
   authRoutes.js            # 认证相关路由
   foodRoutes.js            # Food 相关路由
   userRoutes.js            # 用户管理相关路由
-/scripts
-  seedAdmin.js             # 初始化或提升管理员账号
-  seedFoods.js             # 插入食物示例数据
 /docs
   /images                  # README 截图资源
 server.js                  # 应用入口

@@ -1,8 +1,15 @@
 const { getLoginRateLimitConfig } = require('../config/runtime');
 
+//1. Map 存储
 const attemptsStore = new Map();
 
-const getKey = (req) => {
+
+//识别用户（key）
+// 作用
+// 生成唯一用户标识：
+// IP（防止同账号多IP攻击）
+// identifier（用户名/邮箱）
+const getKey = (req) => { 
   const identifier = typeof req.body?.identifier === 'string'
     ? req.body.identifier.trim().toLowerCase()
     : 'unknown';
@@ -10,6 +17,11 @@ const getKey = (req) => {
   return `${req.ip}:${identifier}`;
 };
 
+// 作用
+
+// 判断是否过期：
+
+// 👉 如果超过时间窗口 → 直接清空记录
 const pruneExpiredEntry = (entry, now, windowMs) => {
   if (!entry) {
     return null;
@@ -21,11 +33,12 @@ const pruneExpiredEntry = (entry, now, windowMs) => {
 
   return entry;
 };
-
+//限制登录失败次数
 const loginRateLimitMiddleware = (req, res, next) => {
   const { windowMs, maxAttempts } = getLoginRateLimitConfig();
   const now = Date.now();
   const key = getKey(req);
+  //读取当前记录
   const currentEntry = pruneExpiredEntry(attemptsStore.get(key), now, windowMs);
 
   if (!currentEntry) {
@@ -47,6 +60,7 @@ const loginRateLimitMiddleware = (req, res, next) => {
   return next();
 };
 
+//记录失败次数（Map 存储）
 const recordFailedLoginAttempt = (key) => {
   if (!key) {
     return;
