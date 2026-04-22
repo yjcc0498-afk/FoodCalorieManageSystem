@@ -1,6 +1,12 @@
-const mongoose = require('mongoose');
+import mongoose = require('mongoose');
 
-const foodSchema = new mongoose.Schema(
+interface IFood {
+  name: string;
+  calories: number;
+  owner: mongoose.Types.ObjectId;
+}
+
+const foodSchema = new mongoose.Schema<IFood>(
   {
     name: {
       type: String,
@@ -13,7 +19,6 @@ const foodSchema = new mongoose.Schema(
       default: 0,
       min: [0, 'Calories cannot be negative.']
     },
-    // Keep ownership in the model layer so request handlers can safely scope data per user.
     owner: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
@@ -25,4 +30,6 @@ const foodSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model('Food', foodSchema);
+const Food = mongoose.model<IFood>('Food', foodSchema);
+
+export = Food;

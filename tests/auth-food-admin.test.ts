@@ -2,6 +2,21 @@ const assert = require('node:assert/strict');
 const http = require('node:http');
 const mongoose = require('mongoose');
 const { MongoClient } = require('mongodb');
+import type { IncomingHttpHeaders, IncomingMessage, Server } from 'node:http';
+
+type JsonObject = Record<string, any>;
+
+type FetchJsonOptions = {
+  method?: string;
+  headers?: Record<string, string>;
+  body?: string | null;
+};
+
+type FetchJsonResponse = {
+  status: number | undefined;
+  headers: IncomingHttpHeaders;
+  data: JsonObject;
+};
 
 const port = 3111;
 const dbName = `food-calorie-db-test-${Date.now()}`;
@@ -18,11 +33,13 @@ process.env.ADMIN_USERNAME = 'admin_test_runner';
 process.env.ADMIN_EMAIL = 'admin_test_runner@example.com';
 process.env.ADMIN_PASSWORD = 'AdminPass123';
 
-const { startServer } = require('../server');
+const { startServer } = require('../server') as {
+  startServer: () => Promise<Server>;
+};
 
-let serverInstance;
+let serverInstance: Server | undefined;
 
-const fetchJson = async (pathname, options = {}) => {
+const fetchJson = async (pathname: string, options: FetchJsonOptions = {}): Promise<FetchJsonResponse> => {
   const url = new URL(pathname, baseUrl);
   const headers = options.headers || {};
   const body = options.body || null;
@@ -39,11 +56,11 @@ const fetchJson = async (pathname, options = {}) => {
           ...(body ? { 'Content-Length': Buffer.byteLength(body) } : {})
         }
       },
-      (response) => {
+      (response: IncomingMessage) => {
         let bodyText = '';
 
         response.setEncoding('utf8');
-        response.on('data', (chunk) => {
+        response.on('data', (chunk: string) => {
           bodyText += chunk;
         });
         response.on('end', () => {
@@ -66,7 +83,7 @@ const fetchJson = async (pathname, options = {}) => {
   });
 };
 
-const registerAndLogin = async (prefix) => {
+const registerAndLogin = async (prefix: string) => {
   const suffix = `${prefix}-${Date.now()}-${Math.floor(Math.random() * 10000)}`;
   const username = `${prefix}_${suffix}`.toLowerCase();
   const email = `${username}@example.com`;
@@ -92,19 +109,19 @@ const registerAndLogin = async (prefix) => {
     username,
     email,
     password,
-    token: loginResponse.data.token
+    token: loginResponse.data.token as string
   };
 };
 
-const runStep = async (name, fn) => {
+const runStep = async (name: string, fn: () => Promise<void>) => {
   await fn();
   console.log(`ok - ${name}`);
 };
 
 const cleanup = async () => {
   if (serverInstance) {
-    await new Promise((resolve, reject) => {
-      serverInstance.close((error) => {
+    await new Promise<void>((resolve, reject) => {
+      serverInstance!.close((error?: Error) => {
         if (error) {
           reject(error);
           return;
@@ -238,7 +255,7 @@ const main = async () => {
 
   await runStep('login endpoint rate limits repeated failures with 429', async () => {
     const identifier = 'missing-user';
-    let lastResponse;
+    let lastResponse: FetchJsonResponse | undefined;
 
     for (let attempt = 0; attempt < 4; attempt += 1) {
       lastResponse = await fetchJson('/auth/login', {
@@ -251,16 +268,16 @@ const main = async () => {
       });
     }
 
-    assert.equal(lastResponse.status, 429);
-    assert.match(lastResponse.data.message, /Too many login attempts/i);
+    assert.equal(lastResponse?.status, 429);
+    assert.match(lastResponse?.data.message, /Too many login attempts/i);
   });
 };
 
 main()
   .then(cleanup)
-  .catch(async (error) => {
+  .catch(async (error: unknown) => {
     console.error(error);
-    await cleanup().catch((cleanupError) => {
+    await cleanup().catch((cleanupError: unknown) => {
       console.error(cleanupError);
     });
     process.exitCode = 1;

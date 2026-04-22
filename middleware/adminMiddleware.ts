@@ -1,8 +1,7 @@
-//身份认证（auth） + 权限校验（role）
-
+import type { NextFunction, Request, Response } from 'express';
 const { isAdminUser } = require('../utils/permissions');
 
-const adminMiddleware = (req, res, next) => {
+const adminMiddleware = (req: Request, res: Response, next: NextFunction) => {
   if (!req.user) {
     return res.status(401).json({
       message: 'Authentication is required before admin authorization.'
@@ -18,4 +17,4 @@ const adminMiddleware = (req, res, next) => {
   return next();
 };
 
-module.exports = adminMiddleware;
+export = adminMiddleware;

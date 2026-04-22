@@ -1,0 +1,32 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "node",
+    "rootDir": ".",
+    "outDir": "dist",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "noEmitOnError": true
+  },
+  "include": [
+    "server.ts",
+    "config/**/*.ts",
+    "controllers/**/*.ts",
+    "middleware/**/*.ts",
+    "models/**/*.ts",
+    "routes/**/*.ts",
+    "tests/**/*.ts",
+    "types/**/*.d.ts",
+    "utils/**/*.ts"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules",
+    "notebooklm-pack",
+    "public",
+    "server_test.js"
+  ]
+}

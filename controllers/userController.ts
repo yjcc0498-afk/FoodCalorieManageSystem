@@ -1,17 +1,26 @@
-const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
-const Food = require('../models/Food');
-const User = require('../models/User');
+import type { Request, Response } from 'express';
+import bcrypt from 'bcryptjs';
+import mongoose from 'mongoose';
+import Food from '../models/Food';
+import User from '../models/User';
 
-const normalizeUsername = (username) => {
+type RequestWithUser = Request & {
+  user?: any;
+};
+
+const getErrorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const normalizeUsername = (username: unknown): string => {
   return typeof username === 'string' ? username.trim().toLowerCase() : '';
 };
 
-const normalizeEmail = (email) => {
+const normalizeEmail = (email: unknown): string => {
   return typeof email === 'string' ? email.trim().toLowerCase() : '';
 };
 
-const toSafeUser = (user) => {
+const toSafeUser = (user: any): any => {
   if (!user) {
     return null;
   }
@@ -26,25 +35,25 @@ const toSafeUser = (user) => {
   return safeUser;
 };
 
-const getUsers = async (req, res) => {
+const getUsers = async (_req: RequestWithUser, res: Response) => {
   try {
     const users = await User.find().sort({ createdAt: -1 });
 
     return res.status(200).json({
       count: users.length,
-      data: users.map((user) => toSafeUser(user))
+      data: users.map((user: any) => toSafeUser(user))
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to fetch users.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const getUserById = async (req, res) => {
+const getUserById = async (req: RequestWithUser, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -65,17 +74,17 @@ const getUserById = async (req, res) => {
     return res.status(200).json({
       data: toSafeUser(user)
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to fetch user.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const updateUser = async (req, res) => {
+const updateUser = async (req: RequestWithUser, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -84,7 +93,7 @@ const updateUser = async (req, res) => {
       });
     }
 
-    const updates = {};
+    const updates: Record<string, any> = {};
 
     if (req.body.username !== undefined) {
       updates.username = normalizeUsername(req.body.username);
@@ -140,7 +149,7 @@ const updateUser = async (req, res) => {
     }
 
     if (updates.username || updates.email) {
-      const duplicateFilters = [];
+      const duplicateFilters: Record<string, any>[] = [];
 
       if (updates.username) {
         duplicateFilters.push({ username: updates.username });
@@ -179,8 +188,10 @@ const updateUser = async (req, res) => {
       message: 'User updated successfully.',
       data: toSafeUser(updatedUser)
     });
-  } catch (error) {
-    if (error.code === 11000) {
+  } catch (error: unknown) {
+    const typedError = error as any;
+
+    if (typedError.code === 11000) {
       return res.status(409).json({
         message: 'Username or email is already in use.',
         error: 'Duplicate user identity field.'
@@ -189,14 +200,14 @@ const updateUser = async (req, res) => {
 
     return res.status(500).json({
       message: 'Failed to update user.',
-      error: error.message
+      error: getErrorMessage(typedError)
     });
   }
 };
 
-const deleteUser = async (req, res) => {
+const deleteUser = async (req: RequestWithUser, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -228,15 +239,15 @@ const deleteUser = async (req, res) => {
       message: 'User deleted successfully.',
       data: toSafeUser(user)
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to delete user.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-module.exports = {
+export {
   getUsers,
   getUserById,
   updateUser,

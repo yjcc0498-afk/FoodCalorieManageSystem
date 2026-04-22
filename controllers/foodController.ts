@@ -1,7 +1,12 @@
-const mongoose = require('mongoose');
-const Food = require('../models/Food');
+import type { Request, Response } from 'express';
+import mongoose from 'mongoose';
+import Food from '../models/Food';
 
-const createFood = async (req, res) => {
+const getErrorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const createFood = async (req: Request, res: Response) => {
   try {
     const { name, calories } = req.body;
 
@@ -19,7 +24,7 @@ const createFood = async (req, res) => {
       });
     }
 
-    const payload = {
+    const payload: Record<string, unknown> = {
       name,
       owner: req.user._id
     };
@@ -34,22 +39,22 @@ const createFood = async (req, res) => {
       message: 'Food created successfully.',
       data: food
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to create food.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const getAllFoods = async (req, res) => {
+const getAllFoods = async (req: Request, res: Response) => {
   try {
     const { keyword } = req.query;
-    const filter = {
+    const filter: Record<string, any> = {
       owner: req.user._id
     };
 
-    if (keyword && keyword.trim()) {
+    if (typeof keyword === 'string' && keyword.trim()) {
       filter.name = {
         $regex: keyword.trim().toLowerCase(),
         $options: 'i'
@@ -59,21 +64,21 @@ const getAllFoods = async (req, res) => {
     const foods = await Food.find(filter).sort({ createdAt: -1 });
 
     return res.status(200).json({
-      keyword: keyword ? keyword.trim() : '',
+      keyword: typeof keyword === 'string' ? keyword.trim() : '',
       count: foods.length,
       data: foods
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to fetch foods.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const updateFoodCalories = async (req, res) => {
+const updateFoodCalories = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
     const { calories } = req.body;
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
@@ -110,17 +115,17 @@ const updateFoodCalories = async (req, res) => {
       message: 'Food calories updated successfully.',
       data: updatedFood
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to update food calories.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const deleteFood = async (req, res) => {
+const deleteFood = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params;
+    const id = String(req.params.id || '');
 
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
@@ -145,15 +150,15 @@ const deleteFood = async (req, res) => {
       message: 'Food deleted successfully.',
       data: deletedFood
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to delete food.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-module.exports = {
+export {
   createFood,
   getAllFoods,
   updateFoodCalories,

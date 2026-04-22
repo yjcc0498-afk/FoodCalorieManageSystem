@@ -1,15 +1,18 @@
+import type { NextFunction, Request, Response } from 'express';
 const { getLoginRateLimitConfig } = require('../config/runtime');
 
-//1. Map 存储
-const attemptsStore = new Map();
+interface LoginAttemptEntry {
+  count: number;
+  firstAttemptAt: number;
+}
 
+interface LoginRequestBody {
+  identifier?: unknown;
+}
 
-//识别用户（key）
-// 作用
-// 生成唯一用户标识：
-// IP（防止同账号多IP攻击）
-// identifier（用户名/邮箱）
-const getKey = (req) => { 
+const attemptsStore = new Map<string, LoginAttemptEntry>();
+
+const getKey = (req: Request<object, object, LoginRequestBody>): string => {
   const identifier = typeof req.body?.identifier === 'string'
     ? req.body.identifier.trim().toLowerCase()
     : 'unknown';
@@ -17,12 +20,11 @@ const getKey = (req) => {
   return `${req.ip}:${identifier}`;
 };
 
-// 作用
-
-// 判断是否过期：
-
-// 👉 如果超过时间窗口 → 直接清空记录
-const pruneExpiredEntry = (entry, now, windowMs) => {
+const pruneExpiredEntry = (
+  entry: LoginAttemptEntry | undefined,
+  now: number,
+  windowMs: number
+): LoginAttemptEntry | null => {
   if (!entry) {
     return null;
   }
@@ -33,12 +35,15 @@ const pruneExpiredEntry = (entry, now, windowMs) => {
 
   return entry;
 };
-//限制登录失败次数
-const loginRateLimitMiddleware = (req, res, next) => {
+
+const loginRateLimitMiddleware = (
+  req: Request<object, object, LoginRequestBody>,
+  res: Response,
+  next: NextFunction
+) => {
   const { windowMs, maxAttempts } = getLoginRateLimitConfig();
   const now = Date.now();
   const key = getKey(req);
-  //读取当前记录
   const currentEntry = pruneExpiredEntry(attemptsStore.get(key), now, windowMs);
 
   if (!currentEntry) {
@@ -60,8 +65,7 @@ const loginRateLimitMiddleware = (req, res, next) => {
   return next();
 };
 
-//记录失败次数（Map 存储）
-const recordFailedLoginAttempt = (key) => {
+const recordFailedLoginAttempt = (key?: string) => {
   if (!key) {
     return;
   }
@@ -84,7 +88,7 @@ const recordFailedLoginAttempt = (key) => {
   });
 };
 
-const clearLoginRateLimit = (key) => {
+const clearLoginRateLimit = (key?: string) => {
   if (!key) {
     return;
   }
@@ -92,7 +96,7 @@ const clearLoginRateLimit = (key) => {
   attemptsStore.delete(key);
 };
 
-module.exports = {
+export = {
   loginRateLimitMiddleware,
   recordFailedLoginAttempt,
   clearLoginRateLimit

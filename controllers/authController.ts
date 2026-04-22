@@ -1,28 +1,31 @@
-const jwt = require('jsonwebtoken');
-const User = require('../models/User');
-const { getJwtConfig } = require('../config/runtime');
+import type { Request, Response } from 'express';
+import jwt from 'jsonwebtoken';
+import User from '../models/User';
+import { getJwtConfig } from '../config/runtime';
+import loginRateLimitModule = require('../middleware/loginRateLimitMiddleware');
+
+type RequestWithUser = Request & {
+  user?: any;
+  loginRateLimitKey?: string;
+};
+
 const {
   clearLoginRateLimit,
   recordFailedLoginAttempt
-} = require('../middleware/loginRateLimitMiddleware');
+} = loginRateLimitModule;
 
-//工具函数
+const getErrorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
 
-//1️⃣ normalize：统一输入格式
-const getNormalizedValue = (value) => String(value || '').trim().toLowerCase();
+const getNormalizedValue = (value: unknown): string => String(value || '').trim().toLowerCase();
 
-// 2️⃣ 提取错误信息
-// 把 MongoDB/Mongoose 的复杂错误变成一句话
-const getValidationMessage = (error) => { 
-  const messages = Object.values(error.errors || {}).map((item) => item.message);
+const getValidationMessage = (error: any): string => {
+  const messages = Object.values(error.errors || {}).map((item: any) => item.message);
   return messages[0] || 'Validation failed.';
 };
 
-// 3️⃣ 创建 JWT Token
-// 作用：
-// 👉 给用户签发登录凭证（token）
-
-const createToken = (user) => {
+const createToken = (user: any): string => {
   const { secret, expiresIn } = getJwtConfig();
 
   return jwt.sign(
@@ -32,8 +35,7 @@ const createToken = (user) => {
   );
 };
 
-//4️⃣ 过滤敏感信息（重点）
-const toSafeUser = (user) => {
+const toSafeUser = (user: any): any => {
   if (!user) {
     return null;
   }
@@ -42,15 +44,12 @@ const toSafeUser = (user) => {
     return user.toSafeObject();
   }
 
-  //删除密码，返回前端
   const safeUser = typeof user.toObject === 'function' ? user.toObject() : { ...user };
   delete safeUser.password;
   return safeUser;
 };
 
-//注册总结流程：
-// 输入 → 校验 → 查重 → 创建 → token → 返回
-const register = async (req, res) => {
+const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
 
@@ -61,11 +60,9 @@ const register = async (req, res) => {
       });
     }
 
-    // 3️⃣ 标准化输入
     const normalizedUsername = getNormalizedValue(username);
     const normalizedEmail = getNormalizedValue(email);
 
-    // 4️⃣ 查重（关键）检测请求的用户名或邮箱是否已存在，不能注册一样的信息
     const existingUser = await User.findOne({
       $or: [
         { username: normalizedUsername },
@@ -80,7 +77,6 @@ const register = async (req, res) => {
       });
     }
 
-    // 5️⃣ 创建用户（核心）把用户信息存到数据库
     const user = await User.create({
       username: normalizedUsername,
       email: normalizedEmail,
@@ -94,15 +90,17 @@ const register = async (req, res) => {
       token,
       safeUser: toSafeUser(user)
     });
-  } catch (error) {
-    if (error.name === 'ValidationError') {
+  } catch (error: unknown) {
+    const typedError = error as any;
+
+    if (typedError.name === 'ValidationError') {
       return res.status(400).json({
-        message: getValidationMessage(error),
-        error: error.message
+        message: getValidationMessage(typedError),
+        error: getErrorMessage(typedError)
       });
     }
 
-    if (error.code === 11000) {
+    if (typedError.code === 11000) {
       return res.status(409).json({
         message: 'Username or email already exists.',
         error: 'Duplicate user credentials.'
@@ -111,21 +109,12 @@ const register = async (req, res) => {
 
     return res.status(500).json({
       message: 'Failed to register user.',
-      error: error.message
+      error: getErrorMessage(typedError)
     });
   }
 };
 
-// 输入
-//  ↓
-// 查用户
-//  ↓
-// 密码验证
-//  ↓
-// 成功 → 清空限流 + 发 token
-// 失败 → 记录失败 + 限流
-const login = async (req, res) => {
-  // Step 0：获取限流 key
+const login = async (req: RequestWithUser, res: Response) => {
   const rateLimitKey = req.loginRateLimitKey;
 
   try {
@@ -141,10 +130,6 @@ const login = async (req, res) => {
 
     const normalizedIdentifier = getNormalizedValue(identifier);
 
-    /*
-      支持 用户名 / 邮箱 都能登录
-      找到用户后，拿出密码和用户输入的密码比对 
-    */
     const user = await User.findOne({
       $or: [
         { username: normalizedIdentifier },
@@ -160,7 +145,6 @@ const login = async (req, res) => {
       });
     }
 
-    //Step 6：密码校验
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
@@ -170,9 +154,8 @@ const login = async (req, res) => {
         error: 'Username/email or password is incorrect.'
       });
     }
-    //登录成功，清楚登录失败记录
+
     clearLoginRateLimit(rateLimitKey);
-    //生成 token
     const token = createToken(user);
 
     return res.status(200).json({
@@ -180,29 +163,29 @@ const login = async (req, res) => {
       token,
       safeUser: toSafeUser(user)
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to log in.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-const getCurrentUser = async (req, res) => {
+const getCurrentUser = async (req: RequestWithUser, res: Response) => {
   try {
     return res.status(200).json({
       message: 'Current user fetched successfully.',
       safeUser: toSafeUser(req.user)
     });
-  } catch (error) {
+  } catch (error: unknown) {
     return res.status(500).json({
       message: 'Failed to fetch current user.',
-      error: error.message
+      error: getErrorMessage(error)
     });
   }
 };
 
-module.exports = {
+export {
   register,
   login,
   getCurrentUser
