@@ -1,53 +1,120 @@
 const TOKEN_STORAGE_KEY = 'food-calorie-token';
 
-const authView = document.getElementById('authView');
-const appView = document.getElementById('appView');
-const showLoginButton = document.getElementById('showLoginButton');
-const showRegisterButton = document.getElementById('showRegisterButton');
-const loginForm = document.getElementById('loginForm');
-const registerForm = document.getElementById('registerForm');
-const authStatusBox = document.getElementById('authStatusBox');
-const logoutButton = document.getElementById('logoutButton');
-const currentUsername = document.getElementById('currentUsername');
-const currentUserEmail = document.getElementById('currentUserEmail');
-const currentUserRole = document.getElementById('currentUserRole');
-const adminPanel = document.getElementById('adminPanel');
-const refreshUsersButton = document.getElementById('refreshUsersButton');
-const userTableBody = document.getElementById('userTableBody');
+type StatusType = 'idle' | 'success' | 'error';
+type AuthMode = 'login' | 'register';
 
-const foodForm = document.getElementById('foodForm');
-const refreshButton = document.getElementById('refreshButton');
-const searchForm = document.getElementById('searchForm');
-const searchInput = document.getElementById('searchInput');
-const clearSearchButton = document.getElementById('clearSearchButton');
-const statusBox = document.getElementById('statusBox');
-const foodTableBody = document.getElementById('foodTableBody');
-const foodCount = document.getElementById('foodCount');
-const calorieTotal = document.getElementById('calorieTotal');
-const calorieAverage = document.getElementById('calorieAverage');
-const foodRowTemplate = document.getElementById('foodRowTemplate');
+type SafeUser = {
+  _id?: string;
+  username?: string;
+  email?: string;
+  role?: 'user' | 'admin' | string;
+  createdAt?: string;
+};
+
+type FoodRecord = {
+  _id: string;
+  name: string;
+  calories: number;
+  createdAt?: string;
+};
+
+type ApiResponse<T = unknown> = {
+  message?: string;
+  error?: string;
+  token?: string;
+  safeUser?: SafeUser;
+  keyword?: string;
+  count?: number;
+  data?: T;
+};
+
+type SessionPayload = {
+  token: string;
+  safeUser: SafeUser;
+};
+
+type FoodCreatePayload = {
+  name: string;
+  calories?: number;
+};
+
+const getElement = <T extends HTMLElement>(id: string): T => {
+  const element = document.getElementById(id);
+
+  if (!element) {
+    throw new Error(`Required DOM element #${id} was not found.`);
+  }
+
+  return element as T;
+};
+
+const getRequiredDescendant = <T extends Element>(parent: ParentNode, selector: string): T => {
+  const element = parent.querySelector(selector);
+
+  if (!element) {
+    throw new Error(`Required DOM selector ${selector} was not found.`);
+  }
+
+  return element as T;
+};
+
+const authView = getElement<HTMLElement>('authView');
+const appView = getElement<HTMLElement>('appView');
+const showLoginButton = getElement<HTMLButtonElement>('showLoginButton');
+const showRegisterButton = getElement<HTMLButtonElement>('showRegisterButton');
+const loginForm = getElement<HTMLFormElement>('loginForm');
+const registerForm = getElement<HTMLFormElement>('registerForm');
+const authStatusBox = getElement<HTMLElement>('authStatusBox');
+const logoutButton = getElement<HTMLButtonElement>('logoutButton');
+const currentUsername = getElement<HTMLElement>('currentUsername');
+const currentUserEmail = getElement<HTMLElement>('currentUserEmail');
+const currentUserRole = getElement<HTMLElement>('currentUserRole');
+const adminPanel = getElement<HTMLElement>('adminPanel');
+const refreshUsersButton = getElement<HTMLButtonElement>('refreshUsersButton');
+const userTableBody = getElement<HTMLTableSectionElement>('userTableBody');
+
+const foodForm = getElement<HTMLFormElement>('foodForm');
+const refreshButton = getElement<HTMLButtonElement>('refreshButton');
+const searchForm = getElement<HTMLFormElement>('searchForm');
+const searchInput = getElement<HTMLInputElement>('searchInput');
+const clearSearchButton = getElement<HTMLButtonElement>('clearSearchButton');
+const statusBox = getElement<HTMLElement>('statusBox');
+const foodTableBody = getElement<HTMLTableSectionElement>('foodTableBody');
+const foodCount = getElement<HTMLElement>('foodCount');
+const calorieTotal = getElement<HTMLElement>('calorieTotal');
+const calorieAverage = getElement<HTMLElement>('calorieAverage');
+const foodRowTemplate = getElement<HTMLTemplateElement>('foodRowTemplate');
 
 const listState = {
   keyword: ''
 };
 
-let authToken = window.localStorage.getItem(TOKEN_STORAGE_KEY);
-let currentUser = null;
+let authToken: string | null = window.localStorage.getItem(TOKEN_STORAGE_KEY);
+let currentUser: SafeUser | null = null;
 
-const setStatusBox = (element, message, type = 'idle') => {
+const getErrorMessage = (error: unknown): string => {
+  return error instanceof Error ? error.message : String(error);
+};
+
+const setStatusBox = (element: HTMLElement, message: string, type: StatusType = 'idle') => {
   element.textContent = message;
   element.className = `status-box status-${type}`;
 };
 
-const setStatus = (message, type = 'idle') => {
+const setStatus = (message: string, type: StatusType = 'idle') => {
   setStatusBox(statusBox, message, type);
 };
 
-const setAuthStatus = (message, type = 'idle') => {
+const setAuthStatus = (message: string, type: StatusType = 'idle') => {
   setStatusBox(authStatusBox, message, type);
 };
 
-const setLoadingState = (button, loading, loadingText, idleText) => {
+const setLoadingState = (
+  button: HTMLButtonElement | null,
+  loading: boolean,
+  loadingText: string,
+  idleText: string
+) => {
   if (!button) {
     return;
   }
@@ -56,7 +123,7 @@ const setLoadingState = (button, loading, loadingText, idleText) => {
   button.textContent = loading ? loadingText : idleText;
 };
 
-const formatDate = (value) => {
+const formatDate = (value?: string) => {
   if (!value) {
     return 'N/A';
   }
@@ -74,7 +141,7 @@ const showAppView = () => {
   appView.classList.remove('hidden');
 };
 
-const setAuthMode = (mode) => {
+const setAuthMode = (mode: AuthMode) => {
   const isLoginMode = mode === 'login';
 
   loginForm.classList.toggle('hidden', !isLoginMode);
@@ -84,7 +151,7 @@ const setAuthMode = (mode) => {
   setAuthStatus(isLoginMode ? 'Please login to continue.' : 'Create a new account to continue.', 'idle');
 };
 
-const saveSession = ({ token, safeUser }) => {
+const saveSession = ({ token, safeUser }: SessionPayload) => {
   authToken = token;
   currentUser = safeUser;
   window.localStorage.setItem(TOKEN_STORAGE_KEY, token);
@@ -110,17 +177,17 @@ const renderCurrentUser = () => {
   adminPanel.classList.toggle('hidden', currentUser.role !== 'admin');
 };
 
-const renderStats = (foods) => {
+const renderStats = (foods: FoodRecord[]) => {
   const totalFoods = foods.length;
   const totalCalories = foods.reduce((sum, food) => sum + Number(food.calories || 0), 0);
   const averageCalories = totalFoods ? Math.round(totalCalories / totalFoods) : 0;
 
-  foodCount.textContent = totalFoods;
-  calorieTotal.textContent = totalCalories;
-  calorieAverage.textContent = averageCalories;
+  foodCount.textContent = String(totalFoods);
+  calorieTotal.textContent = String(totalCalories);
+  calorieAverage.textContent = String(averageCalories);
 };
 
-const renderFoods = (foods) => {
+const renderFoods = (foods: FoodRecord[]) => {
   renderStats(foods);
 
   if (!foods.length) {
@@ -131,22 +198,28 @@ const renderFoods = (foods) => {
   foodTableBody.innerHTML = '';
 
   foods.forEach((food) => {
-    const row = foodRowTemplate.content.firstElementChild.cloneNode(true);
+    const firstElement = foodRowTemplate.content.firstElementChild;
+
+    if (!firstElement) {
+      throw new Error('Food row template is empty.');
+    }
+
+    const row = firstElement.cloneNode(true) as HTMLTableRowElement;
     row.dataset.id = food._id;
 
-    row.querySelector('[data-cell="name"]').textContent = food.name;
-    row.querySelector('[data-cell="calories"]').textContent = String(food.calories);
-    row.querySelector('[data-cell="id"]').textContent = food._id;
-    row.querySelector('[data-cell="createdAt"]').textContent = formatDate(food.createdAt);
+    getRequiredDescendant<HTMLElement>(row, '[data-cell="name"]').textContent = food.name;
+    getRequiredDescendant<HTMLElement>(row, '[data-cell="calories"]').textContent = String(food.calories);
+    getRequiredDescendant<HTMLElement>(row, '[data-cell="id"]').textContent = food._id;
+    getRequiredDescendant<HTMLElement>(row, '[data-cell="createdAt"]').textContent = formatDate(food.createdAt);
 
-    const updateForm = row.querySelector('.inline-update-form');
-    const deleteButton = row.querySelector('.delete-button');
+    const updateForm = getRequiredDescendant<HTMLFormElement>(row, '.inline-update-form');
+    const deleteButton = getRequiredDescendant<HTMLButtonElement>(row, '.delete-button');
 
     updateForm.addEventListener('submit', async (event) => {
       event.preventDefault();
       const formData = new FormData(updateForm);
       const calories = formData.get('calories');
-      const submitButton = updateForm.querySelector('button[type="submit"]');
+      const submitButton = updateForm.querySelector<HTMLButtonElement>('button[type="submit"]');
 
       setLoadingState(submitButton, true, 'Updating...', 'Update');
 
@@ -178,7 +251,7 @@ const renderFoods = (foods) => {
   });
 };
 
-const renderUsers = (users) => {
+const renderUsers = (users: SafeUser[]) => {
   if (!users.length) {
     userTableBody.innerHTML = '<tr><td colspan="5" class="table-empty">No users found.</td></tr>';
     return;
@@ -206,14 +279,12 @@ const renderUsers = (users) => {
   });
 };
 
-const request = async (url, options = {}) => {
-  const headers = {
-    'Content-Type': 'application/json',
-    ...(options.headers || {})
-  };
+const request = async <T = unknown>(url: string, options: RequestInit = {}): Promise<ApiResponse<T>> => {
+  const headers = new Headers(options.headers);
+  headers.set('Content-Type', 'application/json');
 
   if (authToken) {
-    headers.Authorization = `Bearer ${authToken}`;
+    headers.set('Authorization', `Bearer ${authToken}`);
   }
 
   const response = await fetch(url, {
@@ -221,7 +292,7 @@ const request = async (url, options = {}) => {
     headers
   });
 
-  const data = await response.json().catch(() => ({}));
+  const data = await response.json().catch(() => ({})) as ApiResponse<T>;
 
   if (response.status === 401 && authToken) {
     clearSession();
@@ -254,7 +325,7 @@ const loadFoods = async () => {
   setStatus(`Loading foods from GET ${url} ...`, 'idle');
 
   try {
-    const result = await request(url);
+    const result = await request<FoodRecord[]>(url);
     renderFoods(result.data || []);
     if (listState.keyword) {
       setStatus(`Found ${result.count || 0} food record(s) for keyword "${listState.keyword}".`, 'success');
@@ -263,7 +334,7 @@ const loadFoods = async () => {
     }
   } catch (error) {
     renderFoods([]);
-    setStatus(error.message, 'error');
+    setStatus(getErrorMessage(error), 'error');
   }
 };
 
@@ -275,43 +346,52 @@ const loadUsersIfAdmin = async () => {
   userTableBody.innerHTML = '<tr><td colspan="5" class="table-empty">Loading users...</td></tr>';
 
   try {
-    const result = await request('/users');
+    const result = await request<SafeUser[]>('/users');
     renderUsers(result.data || []);
   } catch (error) {
-    userTableBody.innerHTML = `<tr><td colspan="5" class="table-empty">${error.message}</td></tr>`;
+    userTableBody.innerHTML = `<tr><td colspan="5" class="table-empty">${getErrorMessage(error)}</td></tr>`;
   }
 };
 
-const createFood = async (payload) => {
-  const result = await request('/food', {
+const createFood = async (payload: FoodCreatePayload) => {
+  const result = await request<FoodRecord>('/food', {
     method: 'POST',
     body: JSON.stringify(payload)
   });
 
-  setStatus(`Created "${result.data.name}" successfully.`, 'success');
+  if (result.data) {
+    setStatus(`Created "${result.data.name}" successfully.`, 'success');
+  }
+
   await loadFoods();
 };
 
-const updateFood = async (id, calories) => {
-  const result = await request(`/food/${id}`, {
+const updateFood = async (id: string, calories: FormDataEntryValue | null) => {
+  const result = await request<FoodRecord>(`/food/${id}`, {
     method: 'PATCH',
     body: JSON.stringify({ calories: Number(calories) })
   });
 
-  setStatus(`Updated calories for "${result.data.name}".`, 'success');
+  if (result.data) {
+    setStatus(`Updated calories for "${result.data.name}".`, 'success');
+  }
+
   await loadFoods();
 };
 
-const deleteFood = async (id) => {
-  const result = await request(`/food/${id}`, {
+const deleteFood = async (id: string) => {
+  const result = await request<FoodRecord>(`/food/${id}`, {
     method: 'DELETE'
   });
 
-  setStatus(`Deleted "${result.data.name}".`, 'success');
+  if (result.data) {
+    setStatus(`Deleted "${result.data.name}".`, 'success');
+  }
+
   await loadFoods();
 };
 
-const enterDashboard = async (session) => {
+const enterDashboard = async (session: SessionPayload) => {
   saveSession(session);
   renderCurrentUser();
   showAppView();
@@ -342,14 +422,14 @@ showRegisterButton.addEventListener('click', () => {
 
 loginForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const submitButton = loginForm.querySelector('button[type="submit"]');
+  const submitButton = loginForm.querySelector<HTMLButtonElement>('button[type="submit"]');
   const formData = new FormData(loginForm);
 
   setLoadingState(submitButton, true, 'Logging in...', 'Login');
   setAuthStatus('Logging in with POST /auth/login ...', 'idle');
 
   try {
-    const result = await request('/auth/login', {
+    const result = await request<unknown>('/auth/login', {
       method: 'POST',
       body: JSON.stringify({
         identifier: String(formData.get('identifier') || '').trim(),
@@ -357,11 +437,18 @@ loginForm.addEventListener('submit', async (event) => {
       })
     });
 
+    if (!result.token || !result.safeUser) {
+      throw new Error('Login response did not include a session.');
+    }
+
     setAuthStatus('Login successful.', 'success');
-    await enterDashboard(result);
+    await enterDashboard({
+      token: result.token,
+      safeUser: result.safeUser
+    });
     loginForm.reset();
   } catch (error) {
-    setAuthStatus(error.message, 'error');
+    setAuthStatus(getErrorMessage(error), 'error');
   } finally {
     setLoadingState(submitButton, false, 'Logging in...', 'Login');
   }
@@ -369,14 +456,14 @@ loginForm.addEventListener('submit', async (event) => {
 
 registerForm.addEventListener('submit', async (event) => {
   event.preventDefault();
-  const submitButton = registerForm.querySelector('button[type="submit"]');
+  const submitButton = registerForm.querySelector<HTMLButtonElement>('button[type="submit"]');
   const formData = new FormData(registerForm);
 
   setLoadingState(submitButton, true, 'Registering...', 'Register and Enter');
   setAuthStatus('Creating account with POST /auth/register ...', 'idle');
 
   try {
-    const result = await request('/auth/register', {
+    const result = await request<unknown>('/auth/register', {
       method: 'POST',
       body: JSON.stringify({
         username: String(formData.get('username') || '').trim(),
@@ -385,11 +472,18 @@ registerForm.addEventListener('submit', async (event) => {
       })
     });
 
+    if (!result.token || !result.safeUser) {
+      throw new Error('Registration response did not include a session.');
+    }
+
     setAuthStatus('Registration successful.', 'success');
-    await enterDashboard(result);
+    await enterDashboard({
+      token: result.token,
+      safeUser: result.safeUser
+    });
     registerForm.reset();
   } catch (error) {
-    setAuthStatus(error.message, 'error');
+    setAuthStatus(getErrorMessage(error), 'error');
   } finally {
     setLoadingState(submitButton, false, 'Registering...', 'Register and Enter');
   }
@@ -417,11 +511,11 @@ refreshUsersButton.addEventListener('click', async () => {
 foodForm.addEventListener('submit', async (event) => {
   event.preventDefault();
 
-  const submitButton = foodForm.querySelector('button[type="submit"]');
+  const submitButton = foodForm.querySelector<HTMLButtonElement>('button[type="submit"]');
   const formData = new FormData(foodForm);
   const name = String(formData.get('name') || '').trim();
   const calories = formData.get('calories');
-  const payload = { name };
+  const payload: FoodCreatePayload = { name };
 
   if (calories !== '') {
     payload.calories = Number(calories);
@@ -433,7 +527,7 @@ foodForm.addEventListener('submit', async (event) => {
     await createFood(payload);
     foodForm.reset();
   } catch (error) {
-    setStatus(error.message, 'error');
+    setStatus(getErrorMessage(error), 'error');
   } finally {
     setLoadingState(submitButton, false, 'Saving...', 'Save Food');
   }

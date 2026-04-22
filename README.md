@@ -22,7 +22,7 @@
 - Mongoose
 - JWT (`jsonwebtoken`)
 - bcryptjs
-- Vanilla HTML / CSS / JavaScript
+- Vanilla HTML / CSS / TypeScript
 - nodemon
 
 ## Core Features
@@ -57,7 +57,7 @@
 /public
   index.html
   styles.css
-  app.js
+  app.ts
 /routes
   authRoutes.ts
   foodRoutes.ts
@@ -72,6 +72,7 @@
   db_show_1.png
 server.ts
 tsconfig.json
+tsconfig.public.json
 ```
 
 ## How To Run
