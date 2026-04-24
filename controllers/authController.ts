@@ -14,11 +14,22 @@ const {
   recordFailedLoginAttempt
 } = loginRateLimitModule;
 
+class RequestValidationError extends Error {}
+
 const getErrorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error);
 };
 
 const getNormalizedValue = (value: unknown): string => String(value || '').trim().toLowerCase();
+
+const createAvatarSeed = (value: unknown): string => {
+  const normalizedValue = String(value || 'user').trim().toLowerCase();
+  const sanitizedValue = normalizedValue
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '');
+
+  return sanitizedValue || 'user';
+};
 
 const getValidationMessage = (error: any): string => {
   const messages = Object.values(error.errors || {}).map((item: any) => item.message);
@@ -49,6 +60,110 @@ const toSafeUser = (user: any): any => {
   return safeUser;
 };
 
+const parseOptionalTextField = (value: unknown, fieldLabel: string): string | null | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null) {
+    return null;
+  }
+
+  if (typeof value !== 'string') {
+    throw new RequestValidationError(`${fieldLabel} must be a string.`);
+  }
+
+  const normalizedValue = value.trim();
+  return normalizedValue ? normalizedValue : null;
+};
+
+const parseOptionalNonNegativeNumber = (value: unknown, fieldLabel: string): number | null | undefined => {
+  if (value === undefined) {
+    return undefined;
+  }
+
+  if (value === null || value === '') {
+    return null;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isFinite(parsedValue)) {
+    throw new RequestValidationError(`${fieldLabel} must be a valid number.`);
+  }
+
+  if (parsedValue < 0) {
+    throw new RequestValidationError(`${fieldLabel} cannot be negative.`);
+  }
+
+  return parsedValue;
+};
+
+const buildRegistrationProfileInput = (body: Record<string, unknown>, normalizedUsername: string) => {
+  const profileInput: Record<string, unknown> = {};
+  const bio = parseOptionalTextField(body.bio, 'Bio');
+  const height = parseOptionalNonNegativeNumber(body.height, 'Height');
+  const age = parseOptionalNonNegativeNumber(body.age, 'Age');
+  const weight = parseOptionalNonNegativeNumber(body.weight, 'Weight');
+  const targetWeight = parseOptionalNonNegativeNumber(body.targetWeight, 'Target weight');
+  const dailyCalorieGoal = parseOptionalNonNegativeNumber(body.dailyCalorieGoal, 'Daily calorie goal');
+  const avatarUrl = parseOptionalTextField(body.avatarUrl, 'Avatar URL');
+  const rawAvatarType = body.avatarType === undefined
+    ? undefined
+    : String(body.avatarType).trim().toLowerCase();
+
+  if (rawAvatarType !== undefined && !['default', 'uploaded'].includes(rawAvatarType)) {
+    throw new RequestValidationError('Avatar type must be default or uploaded.');
+  }
+
+  if (bio !== undefined) {
+    profileInput.bio = bio;
+  }
+
+  if (height !== undefined) {
+    profileInput.height = height;
+  }
+
+  if (age !== undefined) {
+    profileInput.age = age;
+  }
+
+  if (weight !== undefined) {
+    profileInput.weight = weight;
+  }
+
+  if (targetWeight !== undefined) {
+    profileInput.targetWeight = targetWeight;
+  }
+
+  if (dailyCalorieGoal !== undefined) {
+    profileInput.dailyCalorieGoal = dailyCalorieGoal;
+  }
+
+  const requestedAvatarSeed = body.avatarSeed === undefined
+    ? undefined
+    : createAvatarSeed(body.avatarSeed || normalizedUsername);
+
+  if (rawAvatarType === 'uploaded' || (rawAvatarType === undefined && avatarUrl)) {
+    if (!avatarUrl) {
+      throw new RequestValidationError('Avatar URL is required when avatar type is uploaded.');
+    }
+
+    profileInput.avatarType = 'uploaded';
+    profileInput.avatarUrl = avatarUrl;
+
+    if (requestedAvatarSeed) {
+      profileInput.avatarSeed = requestedAvatarSeed;
+    }
+  } else if (rawAvatarType === 'default' || requestedAvatarSeed !== undefined) {
+    profileInput.avatarType = 'default';
+    profileInput.avatarUrl = null;
+    profileInput.avatarSeed = requestedAvatarSeed || createAvatarSeed(normalizedUsername);
+  }
+
+  return profileInput;
+};
+
 const register = async (req: Request, res: Response) => {
   try {
     const { username, email, password } = req.body;
@@ -62,6 +177,7 @@ const register = async (req: Request, res: Response) => {
 
     const normalizedUsername = getNormalizedValue(username);
     const normalizedEmail = getNormalizedValue(email);
+    const profileInput = buildRegistrationProfileInput(req.body || {}, normalizedUsername);
 
     const existingUser = await User.findOne({
       $or: [
@@ -80,7 +196,8 @@ const register = async (req: Request, res: Response) => {
     const user = await User.create({
       username: normalizedUsername,
       email: normalizedEmail,
-      password
+      password,
+      ...profileInput
     });
 
     const token = createToken(user);
@@ -92,6 +209,13 @@ const register = async (req: Request, res: Response) => {
     });
   } catch (error: unknown) {
     const typedError = error as any;
+
+    if (typedError instanceof RequestValidationError) {
+      return res.status(400).json({
+        message: typedError.message,
+        error: 'Invalid registration input.'
+      });
+    }
 
     if (typedError.name === 'ValidationError') {
       return res.status(400).json({
@@ -156,6 +280,12 @@ const login = async (req: RequestWithUser, res: Response) => {
     }
 
     clearLoginRateLimit(rateLimitKey);
+    const lastLoginAt = new Date();
+    await User.updateOne(
+      { _id: user._id },
+      { $set: { lastLoginAt } }
+    );
+    user.lastLoginAt = lastLoginAt;
     const token = createToken(user);
 
     return res.status(200).json({

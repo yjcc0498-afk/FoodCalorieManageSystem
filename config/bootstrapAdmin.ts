@@ -24,6 +24,10 @@ const hasAdminConfig = ({ username, email, password }: AdminConfig) => {
   return Boolean(username && email && password);
 };
 
+const logBootstrapConflict = (reason: string) => {
+  console.warn(`Admin bootstrap skipped. ${reason}`);
+};
+
 const ensureAdminUser = async () => {
   const adminConfig = readAdminConfig();
 
@@ -32,20 +36,48 @@ const ensureAdminUser = async () => {
     return null;
   }
 
-  const existingUser = await User.findOne({
+  const conflictingUsers = await User.find({
     $or: [
       { username: adminConfig.username },
       { email: adminConfig.email }
     ]
   }).select('+password');
 
-  if (existingUser) {
-    existingUser.username = adminConfig.username;
-    existingUser.email = adminConfig.email;
-    existingUser.password = adminConfig.password;
-    existingUser.role = 'admin';
+  if (conflictingUsers.length > 1) {
+    logBootstrapConflict('Multiple users conflict with ADMIN_USERNAME or ADMIN_EMAIL in .env.');
+    return null;
+  }
 
-    await existingUser.save();
+  const existingUser = conflictingUsers[0];
+
+  if (existingUser) {
+    if (existingUser.role !== 'admin') {
+      logBootstrapConflict('A regular user already uses ADMIN_USERNAME or ADMIN_EMAIL in .env.');
+      return null;
+    }
+
+    let shouldSave = false;
+
+    if (existingUser.username !== adminConfig.username) {
+      existingUser.username = adminConfig.username;
+      shouldSave = true;
+    }
+
+    if (existingUser.email !== adminConfig.email) {
+      existingUser.email = adminConfig.email;
+      shouldSave = true;
+    }
+
+    const passwordMatches = await existingUser.comparePassword(adminConfig.password);
+    if (!passwordMatches) {
+      existingUser.password = adminConfig.password;
+      shouldSave = true;
+    }
+
+    if (shouldSave) {
+      await existingUser.save();
+    }
+
     return existingUser;
   }
 

@@ -5,6 +5,12 @@ type JwtConfig = {
   expiresIn: SignOptions['expiresIn'];
 };
 
+type AvatarUploadConfig = {
+  maxBytes: number;
+  allowedMimeTypes: string[];
+  publicBasePath: string;
+};
+
 const parsePositiveInteger = (value: string | undefined, fallback: number) => {
   if (value === undefined) {
     return fallback;
@@ -39,13 +45,37 @@ const getLoginRateLimitConfig = () => {
   };
 };
 
+const getAvatarUploadConfig = (): AvatarUploadConfig => {
+  const maxBytes = parsePositiveInteger(process.env.AVATAR_UPLOAD_MAX_BYTES, 1024 * 1024);
+
+  return {
+    maxBytes,
+    allowedMimeTypes: [
+      'image/jpeg',
+      'image/png',
+      'image/webp',
+      'image/gif'
+    ],
+    publicBasePath: '/uploads/avatars'
+  };
+};
+
+const getJsonBodyLimit = (): string => {
+  const { maxBytes } = getAvatarUploadConfig();
+  const limitBytes = Math.max(256 * 1024, Math.ceil(maxBytes * 1.5));
+  return `${limitBytes}b`;
+};
+
 const validateRuntimeConfig = () => {
   getJwtConfig();
   getLoginRateLimitConfig();
+  getAvatarUploadConfig();
 };
 
 export {
   getJwtConfig,
   getLoginRateLimitConfig,
+  getAvatarUploadConfig,
+  getJsonBodyLimit,
   validateRuntimeConfig
 };

@@ -2,8 +2,52 @@ import type { Request, Response } from 'express';
 import mongoose from 'mongoose';
 import Food from '../models/Food';
 
+const DEFAULT_PAGE = 1;
+const DEFAULT_LIMIT = 10;
+const ALLOWED_SORT_FIELDS = new Set(['createdAt', 'updatedAt', 'name', 'calories']);
+
 const getErrorMessage = (error: unknown): string => {
   return error instanceof Error ? error.message : String(error);
+};
+
+const escapeRegex = (value: string): string => {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+};
+
+const parsePositiveInteger = (value: unknown): number | null => {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return Number.NaN;
+  }
+
+  const parsedValue = Number(value);
+
+  if (!Number.isInteger(parsedValue) || parsedValue <= 0) {
+    return Number.NaN;
+  }
+
+  return parsedValue;
+};
+
+const parseNonNegativeNumber = (value: unknown): number | null => {
+  if (value === undefined) {
+    return null;
+  }
+
+  if (typeof value !== 'string' || !value.trim()) {
+    return Number.NaN;
+  }
+
+  const parsedValue = Number(value);
+
+  if (Number.isNaN(parsedValue) || parsedValue < 0) {
+    return Number.NaN;
+  }
+
+  return parsedValue;
 };
 
 const createFood = async (req: Request, res: Response) => {
@@ -49,23 +93,124 @@ const createFood = async (req: Request, res: Response) => {
 
 const getAllFoods = async (req: Request, res: Response) => {
   try {
-    const { keyword } = req.query;
+    const keyword = typeof req.query.keyword === 'string' ? req.query.keyword.trim() : '';
+    const rawPage = parsePositiveInteger(req.query.page);
+    const rawLimit = parsePositiveInteger(req.query.limit);
+    const rawCaloriesMin = parseNonNegativeNumber(req.query.caloriesMin);
+    const rawCaloriesMax = parseNonNegativeNumber(req.query.caloriesMax);
+    const sortBy = typeof req.query.sortBy === 'string' && req.query.sortBy.trim()
+      ? req.query.sortBy.trim()
+      : 'createdAt';
+    const order = typeof req.query.order === 'string' && req.query.order.trim()
+      ? req.query.order.trim().toLowerCase()
+      : 'desc';
+
+    if (rawPage !== null && Number.isNaN(rawPage)) {
+      return res.status(400).json({
+        message: 'Page must be a positive integer.',
+        error: 'Invalid page query value.'
+      });
+    }
+
+    if (rawLimit !== null && Number.isNaN(rawLimit)) {
+      return res.status(400).json({
+        message: 'Limit must be a positive integer.',
+        error: 'Invalid limit query value.'
+      });
+    }
+
+    if (rawCaloriesMin !== null && Number.isNaN(rawCaloriesMin)) {
+      return res.status(400).json({
+        message: 'caloriesMin must be a valid non-negative number.',
+        error: 'Invalid caloriesMin query value.'
+      });
+    }
+
+    if (rawCaloriesMax !== null && Number.isNaN(rawCaloriesMax)) {
+      return res.status(400).json({
+        message: 'caloriesMax must be a valid non-negative number.',
+        error: 'Invalid caloriesMax query value.'
+      });
+    }
+
+    if (!ALLOWED_SORT_FIELDS.has(sortBy)) {
+      return res.status(400).json({
+        message: 'sortBy must be one of: createdAt, updatedAt, name, calories.',
+        error: 'Invalid sortBy query value.'
+      });
+    }
+
+    if (order !== 'asc' && order !== 'desc') {
+      return res.status(400).json({
+        message: 'order must be either asc or desc.',
+        error: 'Invalid order query value.'
+      });
+    }
+
+    if (
+      rawCaloriesMin !== null &&
+      rawCaloriesMax !== null &&
+      rawCaloriesMin > rawCaloriesMax
+    ) {
+      return res.status(400).json({
+        message: 'caloriesMin cannot be greater than caloriesMax.',
+        error: 'Invalid calories range.'
+      });
+    }
+
     const filter: Record<string, any> = {
       owner: req.user._id
     };
 
-    if (typeof keyword === 'string' && keyword.trim()) {
+    if (keyword) {
       filter.name = {
-        $regex: keyword.trim().toLowerCase(),
+        $regex: escapeRegex(keyword.toLowerCase()),
         $options: 'i'
       };
     }
 
-    const foods = await Food.find(filter).sort({ createdAt: -1 });
+    if (rawCaloriesMin !== null || rawCaloriesMax !== null) {
+      filter.calories = {};
+
+      if (rawCaloriesMin !== null) {
+        filter.calories.$gte = rawCaloriesMin;
+      }
+
+      if (rawCaloriesMax !== null) {
+        filter.calories.$lte = rawCaloriesMax;
+      }
+    }
+
+    const page = rawPage ?? DEFAULT_PAGE;
+    const total = await Food.countDocuments(filter);
+    const usesExplicitPagination = req.query.page !== undefined || req.query.limit !== undefined;
+    const limit = rawLimit ?? (usesExplicitPagination ? DEFAULT_LIMIT : total || DEFAULT_LIMIT);
+    const totalPages = total === 0 ? 0 : Math.ceil(total / limit);
+    const sortOrder = order === 'asc' ? 1 : -1;
+    const sort: Record<string, 1 | -1> = {
+      [sortBy]: sortOrder
+    };
+
+    if (sortBy !== 'createdAt') {
+      sort.createdAt = -1;
+    }
+
+    const foods = await Food.find(filter)
+      .sort(sort)
+      .skip((page - 1) * limit)
+      .limit(limit);
 
     return res.status(200).json({
-      keyword: typeof keyword === 'string' ? keyword.trim() : '',
+      keyword,
       count: foods.length,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+        hasNextPage: totalPages > 0 && page < totalPages,
+        hasPrevPage: page > 1 && total > 0
+      },
       data: foods
     });
   } catch (error: unknown) {

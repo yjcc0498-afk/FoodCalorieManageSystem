@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>登录 - Food Calorie v3</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="login">
+    <main class="login-shell">
+      <section class="login-art">
+        <nav class="login-nav">
+          <a class="brand" href="/">
+            <span class="brand-mark"></span>
+            <span>Food Calorie v3</span>
+          </a>
+        </nav>
+
+        <div class="login-copy reveal">
+          <p class="eyebrow">Daily Encouragement</p>
+          <p id="auth-quote-text" class="auth-quote-text">把每一天吃了什么，变成真正可跟踪的数据。</p>
+          <div class="auth-quote-footer">
+            <span id="auth-quote-source" class="auth-quote-source">健康日签</span>
+            <button id="auth-quote-next" class="quote-switch" type="button" aria-label="换一句">
+              <img class="quote-switch-icon" src="./fresh_icon.png" alt="" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="auth-panel layer-card reveal delay-2">
+        <div class="auth-tabs">
+          <button class="tab is-active" type="button">登录</button>
+          <a class="tab" href="/register">注册</a>
+        </div>
+
+        <div class="section-heading compact">
+          <p class="eyebrow">Secure Access</p>
+          <h2>进入个人主页</h2>
+        </div>
+
+        <form id="login-form" class="form-grid">
+          <label>
+            <span>用户名或邮箱</span>
+            <input id="login-identifier" name="identifier" type="text" placeholder="例如：alice@example.com 或 alice" />
+          </label>
+          <label>
+            <span>密码</span>
+            <input id="login-password" name="password" type="password" placeholder="请输入密码" />
+          </label>
+          <label class="checkbox-row">
+            <input id="login-session-only" type="checkbox" checked />
+            <span>仅在当前会话中保存登录状态</span>
+          </label>
+          <button id="login-submit" class="button primary full" type="submit">登录并进入工作台</button>
+          <a class="button full" href="/admin">前往管理员页</a>
+          <a class="button full" href="/register">没有账号？去注册</a>
+        </form>
+
+        <p id="login-status" class="auth-status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="./app.client.js"></script>
+  </body>
+</html>

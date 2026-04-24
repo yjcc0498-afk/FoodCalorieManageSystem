@@ -1,110 +1,55 @@
-# Food Calorie Management System
+# Food Calorie Management System v3
 
-一个基于 Node.js、Express、MongoDB 和 Mongoose 的食物热量管理系统。项目当前已经支持食物热量 CRUD、JWT 注册登录、当前用户查询、用户级 Food 数据隔离、管理员用户管理，以及登录失败限流。
+一个基于 `Node.js + Express 5 + MongoDB + Mongoose + TypeScript` 的食物热量管理练习项目。当前主线版本已经包含：
 
-后端代码按 `routes -> middleware -> controllers -> models -> DB` 分层组织，方便用 Postman 或前端页面理解完整请求链路。
-
-## Screenshots
-界面和功能的简单展示：
-
-![Frontend Dashboard](docs/images/show1_v1.png)
-
-![Search And Table View](docs/images/show2_v2.png)
-
-本地 MongoDB 数据视图：
-
-![MongoDB Data View](docs/images/db_show_1.png)
+- 用户注册、登录、JWT 鉴权、`GET /auth/me`
+- 用户级 Food 管理与 owner 隔离
+- Profile 资料、密码、头像管理
+- Admin 总览、全局 Food 浏览、用户管理
+- v3 演示前端页面：`/login`、`/register`、`/app`、`/admin`
+- 新增 Goals + Journal 后端：目标周期、按日期体重日志、按日期饮食记录与汇总
 
 ## Tech Stack
-- Node.js
-- Express 5
-- MongoDB 本地 `mongod`
-- Mongoose
-- JWT (`jsonwebtoken`)
-- bcryptjs
-- Vanilla HTML / CSS / TypeScript
-- nodemon
 
-## Core Features
-- 用户注册、登录和 `GET /auth/me` 当前用户查询
-- JWT Bearer Token 鉴权
-- 登录失败限流，降低暴力破解风险
-- 启动服务时根据 `.env` 初始化或更新管理员账号
-- 创建、查询、搜索、更新和删除 Food 记录
-- Food 数据按当前登录用户隔离
-- 管理员查询、更新和删除用户
-- 删除用户时同步删除该用户拥有的 Food 数据
-- 管理员不能删除自己的管理员账号，避免锁死系统
-- 前端页面直接对接后端 API
+- Node.js
+- TypeScript
+- Express 5
+- MongoDB（本地 `mongod`）
+- Mongoose
+- JWT（`jsonwebtoken`）
+- `bcryptjs`
+- Vanilla HTML / CSS / TypeScript
+
+## Request Flow
+
+项目按以下链路组织：
+
+```text
+Request -> Route -> Middleware -> Controller -> Model -> DB -> Response
+```
 
 ## Project Structure
+
 ```text
 /config
-  db.ts
-  runtime.ts
-  bootstrapAdmin.ts
 /controllers
-  authController.ts
-  foodController.ts
-  userController.ts
 /middleware
-  authMiddleware.ts
-  adminMiddleware.ts
-  loginRateLimitMiddleware.ts
 /models
-  Food.ts
-  User.ts
 /public
-  index.html
-  styles.css
-  app.ts
 /routes
-  authRoutes.ts
-  foodRoutes.ts
-  userRoutes.ts
 /tests
-  auth-food-admin.test.ts
+/types
 /utils
-  permissions.ts
-/docs/images
-  show1_v1.png
-  show2_v2.png
-  db_show_1.png
 server.ts
-tsconfig.json
-tsconfig.public.json
+README.md
+package.json
 ```
 
-## How To Run
-1. 确保本地 MongoDB 已启动。
-2. 复制或检查 `.env`，确保数据库、JWT、管理员账号和登录限流配置完整。
-3. 安装依赖并启动服务。
+## Runtime Config
 
-```bash
-npm install
-npm run build
-npm start
-```
+运行时配置始终以 `.env` / `process.env` 为准，不要把 MongoDB 地址、JWT 密钥、管理员账号密码或限流参数硬编码进源码。
 
-开发模式：
-
-```bash
-npm run dev
-```
-
-前端页面入口：
-- 登录/注册：`http://localhost:3000/login`
-- 用户热量管理：`http://localhost:3000/app`
-- 管理员用户管理：`http://localhost:3000/admin`（仅管理员可访问）
-
-运行主流程测试：
-
-```bash
-npm test
-```
-
-## Environment Variables
-`.env` 示例：
+常用变量如下：
 
 ```env
 PORT=3000
@@ -118,15 +63,233 @@ ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=change-this-password
 ```
 
-`.env` 已在 `.gitignore` 中忽略，不要提交真实密码或 JWT 密钥。
+说明：
+
+- `.env` 不应提交到仓库
+- `.env.example` 用来说明配置结构
+- 启动、鉴权、管理员引导、限流、Goals + Journal 接口都依赖这些运行时配置
+
+## Getting Started
+
+1. 确保本地 MongoDB 已启动
+2. 检查或复制 `.env.example` 到 `.env`
+3. 安装依赖并构建
+
+```bash
+npm install
+npm run build
+```
+
+启动生产构建：
+
+```bash
+npm start
+```
+
+开发模式：
+
+```bash
+npm run dev
+```
+
+运行集成测试：
+
+```bash
+npm test
+```
+
+## Demo Routes
+
+- `GET /` -> `public/index.html`
+- `GET /login` -> `public/login.html`
+- `GET /register` -> `public/register.html`
+- `GET /app` -> `public/user.html`
+- `GET /admin` -> `public/admin.html`
+
+## Core APIs
+
+默认服务地址：`http://localhost:3000`
+
+### Auth
+
+- `POST /auth/register`
+- `POST /auth/login`
+- `GET /auth/me`
+
+登录成功后将返回 `token`，后续受保护接口需要：
+
+```text
+Authorization: Bearer <token>
+```
+
+### Profile
+
+- `GET /profile`
+- `PATCH /profile`
+- `PATCH /profile/password`
+- `PATCH /profile/avatar`
+- `DELETE /profile/avatar`
+
+### Foods
+
+- `POST /food`
+- `GET /foods`
+- `PATCH /food/:id`
+- `DELETE /food/:id`
+
+支持的常见查询：
+
+- `GET /foods?keyword=chicken`
+- `GET /foods?page=1&limit=10&sortBy=createdAt&order=desc`
+- `GET /foods?caloriesMin=100&caloriesMax=300&sortBy=calories&order=asc`
+
+### Admin
+
+- `GET /admin/overview`
+- `GET /admin/foods`
+- `GET /users`
+- `GET /users/:id`
+- `PATCH /users/:id`
+- `DELETE /users/:id`
+
+`GET /admin/overview` 返回的是脱敏后的运行时摘要，不会暴露原始 JWT secret、管理员密码或 MongoDB 连接串。
+
+## Goals + Journal APIs
+
+当前后端已经支持 Goals + Journal 第一阶段闭环，`Food` 仍作为食物主数据，实际每日摄入量只按 `JournalEntry` 聚合。
+
+### Goal Cycle
+
+- `GET /goals/active`
+- `POST /goals/cycle`
+- `PATCH /goals/cycle/:id`
+
+`GoalCycle` 字段：
+
+- `owner`
+- `startDate`
+- `endDate`
+- `startWeight`
+- `targetWeight`
+- `dailyCalorieGoal`
+- `status`：`active | completed | archived`
+
+规则：
+
+- 同一用户同一时间最多只有 1 个 `active` 周期
+- 新建新周期时，旧的 `active` 周期会自动转为 `archived`
+- `User.weight / targetWeight / dailyCalorieGoal` 目前保留兼容，但前端与新汇总接口优先读取当前激活周期
+
+示例：
+
+```http
+POST /goals/cycle
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "startDate": "2026-04-24",
+  "endDate": "2026-06-24",
+  "startWeight": 64.8,
+  "targetWeight": 61.5,
+  "dailyCalorieGoal": 1750
+}
+```
+
+### Daily Log
+
+- `GET /daily-log?date=YYYY-MM-DD`
+- `PUT /daily-log?date=YYYY-MM-DD`
+
+`DailyLog` 用于记录某天的体重与备注，按 `owner + date` 唯一。重复写入同一天会走 upsert，而不是创建重复记录。
+
+示例：
+
+```http
+PUT /daily-log?date=2026-04-24
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "weight": 64.1,
+  "notes": "Updated after workout"
+}
+```
+
+### Journal
+
+- `GET /journal?date=YYYY-MM-DD`
+- `POST /journal`
+- `PATCH /journal/:id`
+- `DELETE /journal/:id`
+
+`JournalEntry` 第一版字段：
+
+- `owner`
+- `date`
+- `mealType`：`breakfast | lunch | dinner | snack`
+- `foodName`
+- `calories`
+- `quantity`
+- `foodId`（可选）
+- `notes`（可选）
+
+接口按当前登录用户做 owner 隔离，不能访问或修改他人的 `JournalEntry`。
+
+示例：
+
+```http
+POST /journal
+Authorization: Bearer <token>
+Content-Type: application/json
+```
+
+```json
+{
+  "date": "2026-04-24",
+  "mealType": "lunch",
+  "foodName": "Chicken Bowl",
+  "calories": 560,
+  "quantity": 1
+}
+```
+
+### Goal Day Summary
+
+- `GET /goals/day?date=YYYY-MM-DD`
+- `GET /goals/day?date=YYYY-MM-DD&month=YYYY-MM`
+
+这个接口用于一次性取回某天的追踪摘要，返回结构包括：
+
+- `date`
+- `goalCycle`
+- `dailyLog`
+- `journalEntries`
+- `monthIndicators`
+- `summary.actualCalories`
+- `summary.targetCalories`
+- `summary.remainingCalories`
+- `summary.weightProgress`
+
+其中：
+
+- `actualCalories` = 该日全部 `JournalEntry.calories` 汇总
+- `targetCalories` = 当前激活 `GoalCycle.dailyCalorieGoal`
+- `remainingCalories` = `targetCalories - actualCalories`
+- `weightProgress` = 按周期起止日和起始/目标体重计算的理论进度
 
 ## API Examples
-默认服务地址为 `http://localhost:3000`。除注册和登录外，Food 接口需要普通用户 Bearer Token，用户管理接口需要管理员 Bearer Token。
 
 ### Register
-- Method: `POST`
-- URL: `http://localhost:3000/auth/register`
-- Body:
+
+```http
+POST /auth/register
+Content-Type: application/json
+```
 
 ```json
 {
@@ -137,9 +300,11 @@ ADMIN_PASSWORD=change-this-password
 ```
 
 ### Login
-- Method: `POST`
-- URL: `http://localhost:3000/auth/login`
-- Body:
+
+```http
+POST /auth/login
+Content-Type: application/json
+```
 
 ```json
 {
@@ -148,22 +313,13 @@ ADMIN_PASSWORD=change-this-password
 }
 ```
 
-登录成功后会返回 `token`，后续请求放到请求头：
-
-```text
-Authorization: Bearer <token>
-```
-
-### Get Current User
-- Method: `GET`
-- URL: `http://localhost:3000/auth/me`
-- Auth: Bearer Token
-
 ### Create Food
-- Method: `POST`
-- URL: `http://localhost:3000/food`
-- Auth: Bearer Token
-- Body:
+
+```http
+POST /food
+Authorization: Bearer <token>
+Content-Type: application/json
+```
 
 ```json
 {
@@ -172,72 +328,50 @@ Authorization: Bearer <token>
 }
 ```
 
-### Get All Foods
-- Method: `GET`
-- URL: `http://localhost:3000/foods`
-- Auth: Bearer Token
-
-### Search Foods
-- Method: `GET`
-- URL: `http://localhost:3000/foods?keyword=chicken`
-- Auth: Bearer Token
-
-### Update Food Calories
-- Method: `PATCH`
-- URL: `http://localhost:3000/food/:id`
-- Auth: Bearer Token
-- Body:
+### Goal Day Summary Response Shape
 
 ```json
 {
-  "calories": 180
+  "message": "Goal day summary fetched successfully.",
+  "data": {
+    "date": "2026-04-24",
+    "goalCycle": {},
+    "dailyLog": {},
+    "journalEntries": [],
+    "monthIndicators": [],
+    "summary": {
+      "actualCalories": 1150,
+      "targetCalories": 1800,
+      "remainingCalories": 650,
+      "weightProgress": {
+        "expectedWeight": 64.11,
+        "actualWeight": 64,
+        "variance": -0.11,
+        "progressRatio": 0.0645,
+        "actualProgressRatio": 0.2424
+      }
+    }
+  }
 }
 ```
 
-### Delete Food
-- Method: `DELETE`
-- URL: `http://localhost:3000/food/:id`
-- Auth: Bearer Token
+## Testing Notes
 
-### Get Users
-- Method: `GET`
-- URL: `http://localhost:3000/users`
-- Auth: Admin Bearer Token
+当前主测试文件是 `tests/auth-food-admin.test.ts`，`npm test` 会先构建，再执行 `dist/tests/auth-food-admin.test.js`。
 
-### Get User By ID
-- Method: `GET`
-- URL: `http://localhost:3000/users/:id`
-- Auth: Admin Bearer Token
+当前测试覆盖包括：
 
-### Update User
-- Method: `PATCH`
-- URL: `http://localhost:3000/users/:id`
-- Auth: Admin Bearer Token
-- Body:
+- 鉴权拦截
+- 注册 / 登录 / `GET /auth/me`
+- Food owner 隔离与列表筛选
+- Admin 权限与总览摘要
+- 登录失败限流
+- Goal cycle 创建与单激活周期行为
+- Daily log 同日 upsert
+- Journal owner isolation
+- `/goals/day` 热量汇总与摘要结构
 
-```json
-{
-  "username": "alice2",
-  "email": "alice2@example.com",
-  "role": "user",
-  "password": "new-password"
-}
-```
+## Notes
 
-### Delete User
-- Method: `DELETE`
-- URL: `http://localhost:3000/users/:id`
-- Auth: Admin Bearer Token
-
-## Request Flow
-以创建 Food 为例：
-
-```text
-Request -> foodRoutes -> authMiddleware -> foodController.createFood -> Food model -> MongoDB -> Response
-```
-
-管理员用户管理链路：
-
-```text
-Request -> userRoutes -> authMiddleware -> adminMiddleware -> userController -> User/Food models -> MongoDB -> Response
-```
+- `SavedMeal` 与 `AuditLog` 目前仍是后续设计项，本轮未开放对应后端接口
+- 若修改认证、数据库、管理员引导或限流配置，请优先检查 `.env`

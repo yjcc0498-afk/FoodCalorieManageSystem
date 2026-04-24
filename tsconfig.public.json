@@ -8,7 +8,7 @@
     "strict": true,
     "skipLibCheck": true,
     "noEmitOnError": true,
-    "outFile": "public/app.js"
+    "outFile": "public/app.client.js"
   },
   "include": ["public/app.ts"]
 }

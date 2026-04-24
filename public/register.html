@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>注册 - Food Calorie v3</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="register">
+    <main class="login-shell">
+      <section class="login-art register-art">
+        <nav class="login-nav">
+          <a class="brand" href="/">
+            <span class="brand-mark"></span>
+            <span>Food Calorie v3</span>
+          </a>
+        </nav>
+
+        <div class="login-copy reveal">
+          <p class="eyebrow">Daily Encouragement</p>
+          <p id="auth-quote-text" class="auth-quote-text">先建立目标，再开始记录每一天。</p>
+          <div class="auth-quote-footer">
+            <span id="auth-quote-source" class="auth-quote-source">健康日签</span>
+            <button id="auth-quote-next" class="quote-switch" type="button" aria-label="换一句">
+              <img class="quote-switch-icon" src="./fresh_icon.png" alt="" />
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <section class="auth-panel layer-card reveal delay-2">
+        <div class="auth-tabs">
+          <a class="tab" href="/login">登录</a>
+          <button class="tab is-active" type="button">注册</button>
+        </div>
+
+        <div class="section-heading compact">
+          <p class="eyebrow">New Account</p>
+          <h2>创建营养档案</h2>
+        </div>
+
+        <form id="register-form" class="form-grid two-col">
+          <label>
+            <span>用户名</span>
+            <input id="register-username" name="username" type="text" placeholder="例如：alice" />
+          </label>
+          <label>
+            <span>邮箱</span>
+            <input id="register-email" name="email" type="email" placeholder="例如：alice@example.com" />
+          </label>
+          <label>
+            <span>密码</span>
+            <input id="register-password" name="password" type="password" placeholder="至少 6 位密码" />
+          </label>
+          <label>
+            <span>确认密码</span>
+            <input id="register-password-confirm" type="password" placeholder="再次输入密码" />
+          </label>
+          <label>
+            <span>每日热量目标</span>
+            <input id="register-goal" name="dailyCalorieGoal" type="number" placeholder="例如：1800" />
+          </label>
+          <label>
+            <span>当前体重</span>
+            <input id="register-weight" name="weight" type="number" step="0.1" placeholder="例如：54.8" />
+          </label>
+          <label class="full-field">
+            <span>默认头像</span>
+            <div class="avatar-picker">
+              <div id="register-avatar-preview" class="avatar">AL</div>
+              <div>
+                <strong>使用 username 生成默认头像</strong>
+              </div>
+            </div>
+          </label>
+          <button id="register-submit" class="button primary full full-field" type="submit">创建并进入工作台</button>
+          <a class="button full full-field" href="/login">已有账号，返回登录</a>
+        </form>
+
+        <p id="register-status" class="auth-status" aria-live="polite"></p>
+      </section>
+    </main>
+    <script src="./app.client.js"></script>
+  </body>
+</html>

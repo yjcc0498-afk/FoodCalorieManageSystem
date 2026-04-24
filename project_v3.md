@@ -27,7 +27,7 @@
 
 ## 2. 你当前项目的现状诊断
 
-结合当前仓库里的 `public/index.html`、`public/app.ts`、`public/styles.css`，你目前前端已经具备这些基础：
+结合当前仓库里的 `public/login.html`、`public/register.html`、`public/app.ts`、`public/styles.css`，你目前前端已经具备这些基础：
 
 - 登录 / 注册切换
 - 用户端食物搜索、创建、更新、删除

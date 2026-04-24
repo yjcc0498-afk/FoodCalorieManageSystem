@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>管理员后台 - Food Calorie v3</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body data-page="admin">
+    <div class="app-shell admin-mode">
+      <aside class="sidebar layer-card">
+        <a class="brand" href="/">
+          <span class="brand-mark"></span>
+          <span>管理台</span>
+        </a>
+        <div class="profile-chip">
+          <div id="admin-shell-avatar" class="avatar">AD</div>
+          <div>
+            <strong id="admin-shell-name">Admin</strong>
+            <span id="admin-shell-role">管理员</span>
+          </div>
+        </div>
+        <nav class="side-nav" aria-label="管理员后台导航">
+          <button class="nav-item is-active" data-view="overview">总览</button>
+          <button class="nav-item" data-view="users">用户</button>
+          <button class="nav-item" data-view="admin-foods">食物</button>
+          <button class="nav-item" data-view="admin-security">安全</button>
+          <button class="nav-item" data-view="system">系统</button>
+        </nav>
+        <a class="sidebar-link" href="/app">切换到用户工作台</a>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">管理员后台</p>
+            <h1>系统管理中心</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="search-field">
+              <span>搜索</span>
+              <input id="admin-global-search" type="search" placeholder="搜索用户或食物" />
+            </div>
+            <a id="admin-logout-link" class="button" href="/login">退出登录</a>
+          </div>
+        </header>
+
+        <section class="view is-visible" id="overview">
+          <div class="dashboard-grid">
+            <article class="hero-card layer-card">
+              <div class="section-heading">
+                <p class="eyebrow">总览</p>
+                <h2>运营与数据概览</h2>
+                <p>查看用户、食物和近期活动情况。</p>
+              </div>
+              <div id="overview-macros" class="macro-row">
+                <div><strong>0</strong><span>用户</span></div>
+                <div><strong>0</strong><span>食物</span></div>
+                <div><strong>0</strong><span>管理员</span></div>
+              </div>
+            </article>
+            <article class="layer-card stat-card"><span class="muted">近 7 天注册</span><strong id="overview-registrations">0</strong><small>新增用户</small></article>
+            <article class="layer-card stat-card"><span class="muted">近 7 天食物</span><strong id="overview-food-creations">0</strong><small>新增食物</small></article>
+            <article class="layer-card chart-card wide">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">动态</p>
+                  <h3>近期活动</h3>
+                </div>
+              </div>
+              <div id="overview-recent-actions" class="audit-list">
+                <div><strong>系统</strong><span>加载中</span></div>
+              </div>
+            </article>
+            <article class="layer-card">
+              <div class="card-head">
+                <h3>安全状态</h3>
+                <button class="button small" type="button" data-view-target="system">查看系统</button>
+              </div>
+              <div class="quick-list">
+                <div><span>登录限流</span><strong>已启用</strong></div>
+                <div><span>JWT</span><strong>已启用</strong></div>
+                <div><span>管理员初始化</span><strong>已启用</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="users">
+          <div class="data-with-inspector">
+            <article class="layer-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">用户管理</p>
+                  <h2>用户列表</h2>
+                </div>
+              </div>
+              <form id="admin-users-filter-form" class="toolbar">
+                <input id="admin-users-keyword" type="search" placeholder="搜索用户名或邮箱" />
+                <select id="admin-users-role">
+                  <option value="">角色：全部</option>
+                  <option value="admin">管理员</option>
+                  <option value="user">普通用户</option>
+                </select>
+                <select id="admin-users-sort">
+                  <option value="createdAt:desc">创建时间：最新</option>
+                  <option value="username:asc">用户名：A-Z</option>
+                </select>
+                <button class="button small" type="submit">筛选</button>
+              </form>
+              <div class="bulk-row">
+                <button class="button small" type="button" id="admin-users-refresh">刷新</button>
+                <button class="button danger small" type="button" id="admin-users-clear">清空详情</button>
+                <span>每页 <select id="admin-users-limit"><option>10</option><option>20</option><option>50</option></select></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>用户</th><th>邮箱</th><th>角色</th><th>食物数</th><th>最近登录</th><th>创建时间</th></tr>
+                  </thead>
+                  <tbody id="admin-users-tbody">
+                    <tr><td colspan="6">加载中...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span id="admin-users-pagination-label">加载中...</span>
+                <div>
+                  <button id="admin-users-prev" class="button small" type="button">上一页</button>
+                  <button id="admin-users-page-indicator" class="button small primary" type="button">1</button>
+                  <button id="admin-users-next" class="button small" type="button">下一页</button>
+                </div>
+              </div>
+            </article>
+            <aside class="layer-card inspector">
+              <p class="eyebrow">详情</p>
+              <h3 id="admin-user-detail-name">请选择用户</h3>
+              <div id="admin-user-detail-avatar" class="avatar xl">--</div>
+              <div id="admin-user-detail-summary" class="goal-list">
+                <div><span>角色</span><strong>-</strong></div>
+                <div><span>食物数</span><strong>-</strong></div>
+                <div><span>最近登录</span><strong>-</strong></div>
+              </div>
+              <form id="admin-user-detail-form" class="form-grid">
+                <label><span>邮箱</span><input id="admin-user-detail-email" type="email" value="" /></label>
+                <label><span>角色</span><select id="admin-user-detail-role"><option value="admin">管理员</option><option value="user">普通用户</option></select></label>
+                <button class="button primary" type="submit">保存修改</button>
+                <button id="admin-user-delete" class="button danger" type="button">删除用户</button>
+              </form>
+              <p id="admin-user-detail-status" class="panel-status" aria-live="polite"></p>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="admin-foods">
+          <div class="data-with-inspector">
+            <article class="layer-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">食物管理</p>
+                  <h2>全局食物数据</h2>
+                </div>
+              </div>
+              <form id="admin-foods-filter-form" class="toolbar">
+                <input id="admin-foods-keyword" type="search" placeholder="搜索食物名称" />
+                <input id="admin-foods-owner" type="search" placeholder="搜索所属用户" />
+                <select id="admin-foods-range">
+                  <option value="">热量：全部</option>
+                  <option value="800-999999">800+ kcal</option>
+                </select>
+                <select id="admin-foods-sort">
+                  <option value="createdAt:desc">创建时间：最新</option>
+                  <option value="calories:desc">热量：从高到低</option>
+                  <option value="calories:asc">热量：从低到高</option>
+                  <option value="name:asc">名称：A-Z</option>
+                </select>
+                <button class="button small" type="submit">筛选</button>
+              </form>
+              <div class="bulk-row">
+                <button class="button small" type="button" id="admin-foods-refresh">刷新</button>
+                <button class="button danger small" type="button" data-view-target="users">查看用户</button>
+                <span>每页 <select id="admin-foods-limit"><option>20</option><option>50</option></select></span>
+              </div>
+              <div class="table-wrap">
+                <table>
+                  <thead>
+                    <tr><th>名称</th><th>所属用户</th><th>热量</th><th>创建时间</th><th>更新时间</th></tr>
+                  </thead>
+                  <tbody id="admin-foods-tbody">
+                    <tr><td colspan="5">加载中...</td></tr>
+                  </tbody>
+                </table>
+              </div>
+              <div class="pagination">
+                <span id="admin-foods-pagination-label">加载中...</span>
+                <div>
+                  <button id="admin-foods-prev" class="button small" type="button">上一页</button>
+                  <button id="admin-foods-page-indicator" class="button small primary" type="button">1</button>
+                  <button id="admin-foods-next" class="button small" type="button">下一页</button>
+                </div>
+              </div>
+            </article>
+            <aside class="layer-card inspector">
+              <p class="eyebrow">说明</p>
+              <h3>数据说明</h3>
+              <div class="layer-stack">
+                <div><strong>用户</strong><span>账号、资料与角色</span></div>
+                <div><strong>食物</strong><span>用户创建的食物数据</span></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="admin-security">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">安全</p>
+                  <h2>安全概览</h2>
+                </div>
+              </div>
+              <div id="admin-security-events" class="audit-list">
+                <div><strong>登录限流</strong><span>加载中...</span></div>
+                <div><strong>JWT 鉴权</strong><span>加载中...</span></div>
+                <div><strong>审计摘要</strong><span>加载中...</span></div>
+              </div>
+            </article>
+            <aside class="layer-card">
+              <div class="section-heading compact">
+                <p class="eyebrow">配置</p>
+                <h2>限流摘要</h2>
+              </div>
+              <div id="admin-security-summary" class="goal-list">
+                <div><span>窗口</span><strong>-</strong></div>
+                <div><span>最大尝试次数</span><strong>-</strong></div>
+                <div><span>JWT 时效</span><strong>-</strong></div>
+                <div><span>审计</span><strong>-</strong></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="system">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="section-heading">
+                <p class="eyebrow">系统</p>
+                <h2>系统配置摘要</h2>
+                <p>这里展示的是运行信息概览，不包含敏感密钥。</p>
+              </div>
+              <div id="system-summary" class="settings-grid">
+                <div><span>运行环境</span><strong>Node.js + Express</strong></div>
+                <div><span>数据库</span><strong>MongoDB</strong></div>
+                <div><span>ODM</span><strong>Mongoose</strong></div>
+                <div><span>鉴权</span><strong>JWT + bcryptjs</strong></div>
+                <div><span>管理员初始化</span><strong>已启用</strong></div>
+                <div><span>环境来源</span><strong>.env</strong></div>
+              </div>
+            </article>
+            <aside class="layer-card inspector">
+              <p class="eyebrow">健康检查</p>
+              <h3>服务状态</h3>
+              <div id="system-health-list" class="health-list">
+                <div><span></span> 接口可用</div>
+                <div><span></span> MongoDB 本地连接</div>
+                <div><span></span> 管理员初始化已启用</div>
+                <div><span></span> 当前版本运行中</div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="./app.client.js"></script>
+  </body>
+</html>
