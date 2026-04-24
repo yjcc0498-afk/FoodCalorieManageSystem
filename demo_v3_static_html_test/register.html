@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>注册 - Food Calorie v3</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="login-shell">
+      <section class="login-art register-art">
+        <nav class="login-nav">
+          <a class="brand" href="./index.html">
+            <span class="brand-mark"></span>
+            <span>Food Calorie v3</span>
+          </a>
+          <div class="login-nav-links">
+            <a href="./login.html">返回登录</a>
+            <a href="./user.html">用户预览</a>
+            <a href="./admin.html">后台预览</a>
+          </div>
+        </nav>
+
+        <div class="login-copy reveal">
+          <p class="eyebrow">Create Nutrition Profile</p>
+          <h1>先建立你的目标，再开始记录每一天。</h1>
+          <p>
+            注册页静态展示 v3 账户初始化流程：基础账号、默认头像、每日热量目标和个人化配置。
+          </p>
+        </div>
+
+        <div class="floating-summary layer-card reveal delay-1">
+          <div>
+            <span class="muted">默认目标</span>
+            <strong>2,180 kcal</strong>
+          </div>
+          <div class="avatar xl" aria-hidden="true">AL</div>
+        </div>
+      </section>
+
+      <section class="auth-panel layer-card reveal delay-2">
+        <div class="auth-tabs">
+          <a class="tab" href="./login.html">登录</a>
+          <button class="tab is-active" type="button">注册</button>
+        </div>
+
+        <div class="section-heading compact">
+          <p class="eyebrow">New Account</p>
+          <h2>创建营养档案</h2>
+          <p>静态页面展示：表单只用于预览，不会提交数据。</p>
+        </div>
+
+        <form class="form-grid two-col">
+          <label>
+            <span>用户名</span>
+            <input type="text" value="alice" />
+            <small>保存时建议统一 trim + lowercase。</small>
+          </label>
+          <label>
+            <span>邮箱</span>
+            <input type="email" value="alice@example.com" />
+            <small>后端需要做唯一性和格式校验。</small>
+          </label>
+          <label>
+            <span>密码</span>
+            <input type="password" value="12345678" />
+            <small>至少 6 位，并使用 bcryptjs 哈希。</small>
+          </label>
+          <label>
+            <span>确认密码</span>
+            <input type="password" value="12345678" />
+            <small>前端提示一致性，后端仍需校验。</small>
+          </label>
+          <label>
+            <span>每日热量目标</span>
+            <input type="text" value="2180 kcal" />
+            <small>用于 Dashboard 的目标对比。</small>
+          </label>
+          <label>
+            <span>当前体重</span>
+            <input type="text" value="64.8 kg" />
+            <small>用于 Goals & Progress 初始数据。</small>
+          </label>
+          <label class="full-field">
+            <span>默认头像</span>
+            <div class="avatar-picker">
+              <div class="avatar">AL</div>
+              <div>
+                <strong>使用 username 生成默认头像</strong>
+                <small>后续可在 Profile 页面上传真实头像或恢复默认头像。</small>
+              </div>
+            </div>
+          </label>
+          <label class="checkbox-row full-field">
+            <input type="checkbox" checked />
+            <span>我理解这是静态注册页，真实注册逻辑后续接入 `POST /auth/register`。</span>
+          </label>
+          <a class="button primary full full-field" href="./user.html">创建并进入用户工作台</a>
+          <a class="button full full-field" href="./login.html">已有账号，返回登录</a>
+        </form>
+
+        <div class="auth-note">
+          <strong>注册后建议初始化</strong>
+          <span>默认头像、dailyCalorieGoal、avatarSeed、lastLoginAt 和基础 Profile 字段可以作为 v3 用户资料的起点。</span>
+        </div>
+      </section>
+    </main>
+  </body>
+</html>

@@ -92,6 +92,11 @@ npm start
 npm run dev
 ```
 
+前端页面入口：
+- 登录/注册：`http://localhost:3000/login`
+- 用户热量管理：`http://localhost:3000/app`
+- 管理员用户管理：`http://localhost:3000/admin`（仅管理员可访问）
+
 运行主流程测试：
 
 ```bash

@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>用户工作台 - Food Calorie v3</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar layer-card">
+        <a class="brand" href="./index.html">
+          <span class="brand-mark"></span>
+          <span>Nutri Desk</span>
+        </a>
+        <div class="profile-chip">
+          <div class="avatar">AL</div>
+          <div>
+            <strong>Alice Lin</strong>
+            <span>目标 2,180 kcal</span>
+          </div>
+        </div>
+        <nav class="side-nav" aria-label="用户工作台导航">
+          <button class="nav-item is-active" data-view="dashboard">Dashboard</button>
+          <button class="nav-item" data-view="journal">今日摄入日志</button>
+          <button class="nav-item" data-view="foods">My Foods</button>
+          <button class="nav-item" data-view="meals">自定义 Meal</button>
+          <button class="nav-item" data-view="goals">图表与日历</button>
+          <button class="nav-item" data-view="profile">个人资料</button>
+          <button class="nav-item" data-view="security">安全设置</button>
+        </nav>
+        <a class="sidebar-link" href="./admin.html">切换到管理员后台</a>
+      </aside>
+
+      <main class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">User Workspace</p>
+            <h1>个人营养工作台</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="search-field">
+              <span>Search</span>
+              <input type="search" placeholder="搜索 food / meal / journal" />
+            </div>
+            <a class="button" href="./login.html">退出</a>
+          </div>
+        </header>
+
+        <section class="view is-visible" id="dashboard">
+          <div class="dashboard-grid">
+            <article class="hero-card layer-card">
+              <div class="section-heading">
+                <p class="eyebrow">Today</p>
+                <h2>1,486 / 2,180 kcal</h2>
+                <p>今日还可摄入 694 kcal。午餐偏高，晚餐建议选择低脂蛋白和蔬菜。</p>
+              </div>
+              <div class="progress-track">
+                <span style="width: 68%"></span>
+              </div>
+              <div class="macro-row">
+                <div><strong>96g</strong><span>蛋白质</span></div>
+                <div><strong>168g</strong><span>碳水</span></div>
+                <div><strong>42g</strong><span>脂肪</span></div>
+              </div>
+            </article>
+
+            <article class="layer-card stat-card">
+              <span class="muted">今日餐次</span>
+              <strong>4</strong>
+              <small>早餐、午餐、加餐已记录</small>
+            </article>
+            <article class="layer-card stat-card">
+              <span class="muted">收藏食物</span>
+              <strong>18</strong>
+              <small>常用食物可一键加入日志</small>
+            </article>
+
+            <article class="layer-card chart-card wide">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">7 Days Trend</p>
+                  <h3>热量摄入趋势</h3>
+                </div>
+                <span class="soft-badge">目标线 2,180</span>
+              </div>
+              <div class="bar-chart" aria-label="最近 7 天热量趋势">
+                <div style="--h: 52%"><span>Mon</span></div>
+                <div style="--h: 71%"><span>Tue</span></div>
+                <div style="--h: 63%"><span>Wed</span></div>
+                <div style="--h: 84%"><span>Thu</span></div>
+                <div style="--h: 77%"><span>Fri</span></div>
+                <div style="--h: 58%"><span>Sat</span></div>
+                <div style="--h: 68%"><span>Sun</span></div>
+              </div>
+            </article>
+
+            <article class="layer-card">
+              <div class="card-head">
+                <h3>今日快速添加</h3>
+                <button class="button small">新增日志</button>
+              </div>
+              <div class="quick-list">
+                <div><span>鸡胸肉饭</span><strong>520 kcal</strong></div>
+                <div><span>希腊酸奶</span><strong>140 kcal</strong></div>
+                <div><span>牛奶燕麦</span><strong>310 kcal</strong></div>
+              </div>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="journal">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">Food Journal</p>
+                  <h2>今日摄入日志</h2>
+                </div>
+                <input class="date-input" type="date" value="2026-04-23" />
+              </div>
+              <div class="meal-stack">
+                <div class="meal-block">
+                  <div class="meal-title"><strong>早餐</strong><span>462 kcal</span></div>
+                  <div class="meal-item"><span>牛奶燕麦</span><small>1 bowl</small><strong>310</strong></div>
+                  <div class="meal-item"><span>蓝莓</span><small>80g</small><strong>62</strong></div>
+                  <div class="meal-item"><span>水煮蛋</span><small>1 item</small><strong>90</strong></div>
+                </div>
+                <div class="meal-block">
+                  <div class="meal-title"><strong>午餐</strong><span>718 kcal</span></div>
+                  <div class="meal-item"><span>鸡胸肉饭</span><small>1 plate</small><strong>520</strong></div>
+                  <div class="meal-item"><span>西兰花</span><small>120g</small><strong>58</strong></div>
+                  <div class="meal-item"><span>希腊酸奶</span><small>1 cup</small><strong>140</strong></div>
+                </div>
+                <div class="meal-block empty-block">
+                  <div class="meal-title"><strong>晚餐</strong><span>未记录</span></div>
+                  <p>建议保留 550-650 kcal 给晚餐。</p>
+                </div>
+              </div>
+            </article>
+
+            <aside class="layer-card inspector">
+              <p class="eyebrow">Add Entry</p>
+              <h3>新增摄入记录</h3>
+              <form class="form-grid">
+                <label><span>选择食物</span><input value="salmon rice bowl" /></label>
+                <label><span>餐次</span><select><option>晚餐</option><option>加餐</option></select></label>
+                <label><span>数量 / 份量</span><input value="1.0 serving" /></label>
+                <label><span>热量快照</span><input value="586 kcal" /></label>
+                <button class="button primary" type="button">加入今日日志</button>
+              </form>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="foods">
+          <article class="layer-card">
+            <div class="card-head">
+              <div>
+                <p class="eyebrow">Food Library</p>
+                <h2>My Foods 数据表</h2>
+              </div>
+              <button class="button primary small">新增 Food</button>
+            </div>
+            <div class="toolbar">
+              <input type="search" placeholder="关键字搜索：chicken / rice" />
+              <select><option>状态：全部</option><option>收藏</option><option>常用</option></select>
+              <select><option>热量范围：全部</option><option>0-200 kcal</option><option>200-500 kcal</option><option>500+ kcal</option></select>
+              <select><option>创建时间：最近优先</option><option>最早优先</option></select>
+            </div>
+            <div class="bulk-row">
+              <label><input type="checkbox" /> 选择本页</label>
+              <button class="button small">批量收藏</button>
+              <button class="button danger small">批量删除</button>
+              <span>每页 <select><option>10</option><option>20</option><option>50</option></select></span>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th></th>
+                    <th>食物名称  Sort</th>
+                    <th>热量  Sort</th>
+                    <th>状态筛选</th>
+                    <th>创建时间  Sort</th>
+                    <th>操作</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><input type="checkbox" /></td>
+                    <td><strong>chicken breast</strong><small>protein / 100g</small></td>
+                    <td>165 kcal</td>
+                    <td><span class="soft-badge">收藏</span></td>
+                    <td>2026-04-20</td>
+                    <td><button class="text-button">详情</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" /></td>
+                    <td><strong>brown rice</strong><small>grain / bowl</small></td>
+                    <td>216 kcal</td>
+                    <td><span class="soft-badge">常用</span></td>
+                    <td>2026-04-18</td>
+                    <td><button class="text-button">详情</button></td>
+                  </tr>
+                  <tr>
+                    <td><input type="checkbox" /></td>
+                    <td><strong>avocado toast</strong><small>breakfast / plate</small></td>
+                    <td>384 kcal</td>
+                    <td><span class="soft-badge">普通</span></td>
+                    <td>2026-04-12</td>
+                    <td><button class="text-button">详情</button></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div class="pagination">
+              <span>共 47 条，当前第 1 / 5 页</span>
+              <div>
+                <button class="button small">上一页</button>
+                <button class="button small primary">1</button>
+                <button class="button small">2</button>
+                <button class="button small">下一页</button>
+              </div>
+            </div>
+          </article>
+        </section>
+
+        <section class="view" id="meals">
+          <div class="masonry-grid">
+            <article class="layer-card meal-template">
+              <p class="eyebrow">Saved Meal</p>
+              <h2>鸡胸肉训练餐</h2>
+              <p>鸡胸肉、糙米、西兰花、橄榄油。适合训练日午餐。</p>
+              <strong>742 kcal</strong>
+              <button class="button primary">加入今日日志</button>
+            </article>
+            <article class="layer-card meal-template offset">
+              <p class="eyebrow">Saved Meal</p>
+              <h2>早餐燕麦杯</h2>
+              <p>燕麦、牛奶、蓝莓、坚果。可复制到任意日期。</p>
+              <strong>486 kcal</strong>
+              <button class="button">编辑模板</button>
+            </article>
+            <article class="layer-card">
+              <div class="section-heading compact">
+                <p class="eyebrow">Create Meal</p>
+                <h2>自定义 meal</h2>
+                <p>把多个 food 组合成可重复使用的模板。</p>
+              </div>
+              <form class="form-grid two-col">
+                <label><span>Meal 名称</span><input value="晚餐低脂组合" /></label>
+                <label><span>默认餐次</span><select><option>晚餐</option></select></label>
+                <label class="full-field"><span>包含食物</span><input value="salmon, asparagus, potato" /></label>
+                <button class="button primary" type="button">保存模板</button>
+              </form>
+            </article>
+          </div>
+        </section>
+
+        <section class="view" id="goals">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">Calendar</p>
+                  <h2>四月摄入日历</h2>
+                </div>
+                <span class="soft-badge">目标达成 18 天</span>
+              </div>
+              <div class="calendar-grid">
+                <span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+                <button>30</button><button class="good">1</button><button class="good">2</button><button>3</button><button class="warn">4</button><button>5</button><button>6</button>
+                <button class="good">7</button><button>8</button><button class="good">9</button><button class="warn">10</button><button>11</button><button>12</button><button class="good">13</button>
+                <button>14</button><button class="good">15</button><button>16</button><button>17</button><button class="warn">18</button><button>19</button><button class="today">20</button>
+                <button>21</button><button>22</button><button class="today">23</button><button>24</button><button>25</button><button>26</button><button>27</button>
+              </div>
+            </article>
+            <aside class="layer-card">
+              <div class="section-heading compact">
+                <p class="eyebrow">Goals</p>
+                <h2>目标与进度</h2>
+              </div>
+              <div class="goal-list">
+                <div><span>每日热量目标</span><strong>2,180 kcal</strong></div>
+                <div><span>当前体重</span><strong>64.8 kg</strong></div>
+                <div><span>目标体重</span><strong>61.5 kg</strong></div>
+                <div><span>BMI</span><strong>21.6</strong></div>
+              </div>
+              <form class="form-grid">
+                <label><span>更新每日目标</span><input value="2180" /></label>
+                <label><span>记录今日体重</span><input value="64.8" /></label>
+                <button class="button primary" type="button">保存目标</button>
+              </form>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="profile">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="profile-editor">
+                <div class="avatar xl">AL</div>
+                <div>
+                  <p class="eyebrow">Profile</p>
+                  <h2>Alice Lin</h2>
+                  <p>默认头像可用 username 生成，也可以上传图片替换。</p>
+                  <div class="button-row">
+                    <button class="button primary">上传头像</button>
+                    <button class="button">恢复默认头像</button>
+                  </div>
+                </div>
+              </div>
+              <form class="form-grid two-col">
+                <label><span>用户名</span><input value="alice" /></label>
+                <label><span>邮箱</span><input value="alice@example.com" /></label>
+                <label><span>身高</span><input value="173 cm" /></label>
+                <label><span>年龄</span><input value="28" /></label>
+                <label><span>当前体重</span><input value="64.8 kg" /></label>
+                <label><span>目标体重</span><input value="61.5 kg" /></label>
+                <label class="full-field"><span>个人简介</span><textarea>工作日控制热量，训练日提高蛋白质摄入。</textarea></label>
+                <button class="button primary" type="button">保存个人资料</button>
+              </form>
+            </article>
+            <aside class="layer-card inspector">
+              <p class="eyebrow">Personalization</p>
+              <h3>个性化配置</h3>
+              <div class="goal-list">
+                <div><span>默认餐次排序</span><strong>早餐优先</strong></div>
+                <div><span>热量单位</span><strong>kcal</strong></div>
+                <div><span>首页默认视图</span><strong>Dashboard</strong></div>
+                <div><span>头像状态</span><strong>Default Seed</strong></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view" id="security">
+          <div class="split-grid">
+            <article class="layer-card">
+              <div class="section-heading">
+                <p class="eyebrow">Security</p>
+                <h2>修改密码</h2>
+                <p>建议独立于个人资料接口，修改成功后重新登录。</p>
+              </div>
+              <form class="form-grid">
+                <label><span>旧密码</span><input type="password" value="old-password" /></label>
+                <label><span>新密码</span><input type="password" value="new-password" /></label>
+                <label><span>确认新密码</span><input type="password" value="new-password" /></label>
+                <button class="button primary" type="button">更新密码</button>
+              </form>
+            </article>
+            <aside class="layer-card">
+              <div class="section-heading compact">
+                <p class="eyebrow">Account Safety</p>
+                <h2>安全设置</h2>
+              </div>
+              <div class="audit-list">
+                <div><strong>最近登录</strong><span>2026-04-23 08:42</span></div>
+                <div><strong>当前角色</strong><span>user</span></div>
+                <div><strong>Token 有效期</strong><span>7d</span></div>
+                <div><strong>密码更新时间</strong><span>2026-04-10</span></div>
+              </div>
+            </aside>
+          </div>
+        </section>
+      </main>
+    </div>
+    <script src="./app.js"></script>
+  </body>
+</html>
